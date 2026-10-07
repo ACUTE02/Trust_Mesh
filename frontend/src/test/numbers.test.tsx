@@ -8,17 +8,20 @@ import App from "../App";
 import { CaseCard, ModelInUse } from "../components/caseParts";
 import { Num } from "../components/evidence";
 import { allEvidence, formatValue } from "../data/evidence";
+import { TechView } from "../components/TechView";
 import { SplitInstrument } from "../pages/Landing";
 
-// A "result-looking" number: two or more decimals, a thousands separator, or four or more digits.
-const RESULT_NUMBER = /\d\.\d{2,}|\d{1,3},\d{3}|\d{5,}|(?!(?:19|20)\d\d)\d{4}/; // years are allowed
+// A "result-looking" number: any decimal, an "N in 100" rate, a thousands separator, or four or more digits.
+const RESULT_NUMBER = /\d\.\d|\d+ in 100|\d{1,3},\d{3}|\d{5,}|(?!(?:19|20)\d\d)\d{4}/; // years are allowed
 
 beforeEach(() => {
   // No API in tests: every request fails, which also exercises the "service didn't answer" states.
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("no network in tests")));
 });
 
-function renderPage(path: string) {
+function renderPage(path: string, engineers = false) {
+  sessionStorage.clear();
+  if (engineers) for (const page of ["landing", "graph", "voice"]) sessionStorage.setItem(`tm-engineers-${page}`, "1");
   return render(
     <MemoryRouter initialEntries={[path]}>
       <App />
@@ -33,14 +36,18 @@ describe("the data module", () => {
       expect(e.runDate, id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       expect(e.phase, id).toBeTruthy();
       expect(e.source?.file, id).toBeTruthy();
-      expect(e.source.key ?? e.source.text, id).toBeTruthy();
+      expect(e.source.key ?? e.source.text ?? e.source.derivedFrom, id).toBeTruthy();
+      if (e.derived) expect(e.source.formula, `${id} is derived and needs a formula`).toBeTruthy();
     }
   });
 });
 
 describe("no number without a source", () => {
-  it.each(["/", "/graph", "/voice"])("page %s renders result numbers only through the data module", (path) => {
-    const { container } = renderPage(path);
+  it.each([
+    ["/", false], ["/graph", false], ["/voice", false], ["/", true], ["/graph", true], ["/voice", true],
+  ] as const)("page %s (engineer detail open: %s) renders result numbers only through the data module", (path, engineers) => {
+    const { container } = renderPage(path, engineers);
+    expect(container.querySelectorAll("[data-layer=engineers]").length > 0).toBe(engineers);
     expect(container.querySelectorAll("[data-evidence]").length).toBeGreaterThan(5);
     const copy = container.cloneNode(true) as HTMLElement;
     // Remove what is allowed to carry numbers: data-module values, live API values, axis furniture,
@@ -127,8 +134,8 @@ describe("the case card", () => {
   it("always carries the no-measured-accuracy note beside the combined score", () => {
     render(<CaseCard graph={GRAPH} voice={VOICE} combined={{ combined_score: 0.55, combined_verdict: "medium", weights: { graph: 0.5, voice: 0.5 } }} />);
     expect(screen.getByTestId("combined-score").textContent).toBe("0.5500");
-    expect(screen.getByRole("note").textContent).toContain("this combined score has no measured accuracy");
-    expect(screen.getByRole("note").textContent).toContain("Placeholder weights (0.5 and 0.5)");
+    expect(screen.getByRole("note").textContent).toContain("It has no measured accuracy");
+    expect(screen.getByRole("note").textContent).toContain("simply averaged (0.5 and 0.5)");
   });
 });
 
@@ -168,5 +175,74 @@ describe("pages without the API", () => {
     const rows = [...container.querySelectorAll(".planned")].filter((n) => /Visual/.test(n.textContent ?? ""));
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) expect(row.textContent).not.toMatch(/\d\.\d/);
+  });
+});
+
+// Revision 1: easy language by default, the technical terms only under "For engineers".
+const JARGON = /PR-AUC|\bEER\b|\bFPR\b|XGBoost|\bGNN\b|wav2vec|temporal split|attack-disjoint|calibrat/i;
+
+describe("two layers", () => {
+  it.each(["/", "/graph", "/voice"])("page %s uses no jargon until the engineer detail is opened", (path) => {
+    const { container } = renderPage(path);
+    const main = container.querySelector("main")!;
+    expect(main.querySelector("[data-layer=engineers]")).toBeNull();
+    const found = (main.textContent ?? "").match(new RegExp(JARGON, "gi"));
+    expect(found, `jargon in the plain layer of ${path}`).toBeNull();
+  });
+
+  it("one toggle opens every engineer block on the page, and the choice is kept for the session", () => {
+    const { container, unmount } = renderPage("/graph");
+    fireEvent.click(screen.getByText("Show the detail for engineers"));
+    expect(container.querySelectorAll("[data-layer=engineers]").length).toBeGreaterThan(4);
+    expect(container.querySelector("main")!.textContent).toMatch(/PR-AUC on the illicit class/);
+    expect(container.querySelector("main")!.textContent).toMatch(/Recall @ 5% FPR \(n = 686\)/);
+    expect(sessionStorage.getItem("tm-engineers-graph")).toBe("1");
+    unmount();
+    const again = render(
+      <MemoryRouter initialEntries={["/graph"]}>
+        <App />
+      </MemoryRouter>,
+    );
+    expect(again.container.querySelectorAll("[data-layer=engineers]").length).toBeGreaterThan(4);
+    fireEvent.click(screen.getByText("Hide the detail for engineers"));
+    expect(again.container.querySelector("[data-layer=engineers]")).toBeNull();
+  });
+
+  it("plain figures are derived entries with a formula, shown through the data module", () => {
+    const derived = allEvidence().filter(([, e]) => e.derived);
+    expect(derived.length).toBeGreaterThan(5);
+    for (const [id, e] of derived) {
+      expect(e.source.derivedFrom, id).toBeTruthy();
+      expect(e.source.formula, id).toBeTruthy();
+    }
+    const { container } = renderPage("/voice");
+    expect(container.querySelector('[data-evidence="voice.2c.D.per100"]')?.textContent).toBe("1.7");
+  });
+});
+
+describe("the technical view", () => {
+  const HEALTH = {
+    graph: { ready: true, model: "xgboost_tier1_tier2" },
+    voice: { ready: true, serving_default: "D", requested_default: "D", fallback_active: false, weights: { D: "phase2c_D_ssl_mean_only_P1_s42.pt" } },
+    neo4j: { connected: true },
+  };
+
+  it("is closed by default and shows only what the service returned", () => {
+    render(<TechView calls={[{ method: "GET", path: "/graph/score/7", status: 200, ms: 12.4, body: { score: 0.5 } }]} health={HEALTH} cypher={{ neighbors: "MATCH (n) RETURN n" }} />);
+    expect(screen.queryByTestId("tech-view")).toBeNull();
+    fireEvent.click(screen.getByText("Show the technical view"));
+    const text = screen.getByTestId("tech-view").textContent ?? "";
+    expect(text).toContain("GET /graph/score/7");
+    expect(text).toContain("round trip 12 ms");
+    expect(text).toContain("weights phase2c_D_ssl_mean_only_P1_s42.pt, seed 42");
+    expect(text).toContain("MATCH (n) RETURN n");
+  });
+
+  it("says so when nothing has been requested or the service is down", () => {
+    render(<TechView calls={[]} health="down" />);
+    fireEvent.click(screen.getByText("Show the technical view"));
+    const text = screen.getByTestId("tech-view").textContent ?? "";
+    expect(text).toContain("The service did not answer");
+    expect(text).toContain("No request yet");
   });
 });

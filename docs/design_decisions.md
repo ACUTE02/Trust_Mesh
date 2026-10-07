@@ -1055,6 +1055,27 @@ Screenshots of the three pages at 390, 768 and 1440 px in both themes were revie
 | Patterns never alone | Shortcut rows say "shortcut, not a result"; the dashed Visual row says "Designed, not built"; verdicts are words. |
 | Stacked tables on phones | They use CSS `display: block`, which some screen readers stop announcing as a table. Accepted; the cells carry their labels as text. |
 
+### Revision 1: two layers (2026-10-08)
+The owner found the first build too technical for a visitor who is not an engineer. The copy rules of the design spec
+are replaced by `PHASE_2_FRONTEND_REVISION_1.md`: plain language by default, exact terms only under "For engineers".
+- **One toggle per page, kept for the session** (`sessionStorage`), rather than a toggle per section: a reader is either
+  an engineer or not, and thirteen small toggles would be clutter.
+- **Jargon is enforced, not just avoided.** A test fails the build if the default layer of any page contains PR-AUC, EER,
+  FPR, XGBoost, GNN, wav2vec, "temporal split", "attack-disjoint" or "calibrat...".
+- **Plain figures are derived entries**, each naming its parent entry, a scale and a formula. The checker recomputes
+  them, and refuses a derived entry that points at another derived entry. The page test now treats any decimal and any
+  "N in 100" as a result number, so a plain figure typed by hand fails the build.
+- **"Recordings", not "calls".** The revision's examples say calls; the data are research recordings, and "calls" would
+  be a new claim.
+- **The Cypher shown in the Technical view comes from the service** (`/graph/query/cypher`, built from the same functions
+  the store executes), not from a copy in the frontend that could drift.
+- **The landing page lost two sections** ("What the evidence shows", "What was cut"). Their content is on the engine
+  pages and in the status list; the revision asks to cut repeats.
+- **Disabled buttons are not faded.** Fading failed contrast. They are a dashed outline with secondary-text colour, and
+  the voice desk says "Add a recording first."
+- **`/health` is retried** for about 75 seconds, because a page opened during start-up otherwise stayed on "service not
+  running".
+
 ### Dataset content check
 The saved screenshots are the pages' empty states: aggregate results, no scored case, no clip, no label, no weight.
 `scripts/check_no_dataset_outputs.py` passes on them. The transaction row numbers in the example menu are identifiers,

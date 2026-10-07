@@ -15,6 +15,49 @@ BATCH = 5000
 MAX_HOPS = 4
 
 
+# The Cypher text of each query, as functions, so the API can show the exact query it runs
+# (`/graph/query/cypher`) without a second copy that could drift.
+def q_neighbors(hops):
+    return f"""
+        MATCH p = (n:Tx {{id: $id}})-[:SENDS_TO*1..{hops}]-(m:Tx)
+        WITH m, min(length(p)) AS hops
+        RETURN m.id AS node_id, hops, m.label AS ground_truth, m.xgb_score AS score, m.verdict AS verdict
+        ORDER BY hops, score DESC LIMIT $limit"""
+
+
+def q_illicit(hops):
+    return f"""
+        MATCH p = (n:Tx {{id: $id}})-[:SENDS_TO*1..{hops}]-(m:Tx {{label: 'illicit'}})
+        WHERE m.id <> $id
+        WITH m, min(length(p)) AS hops
+        RETURN m.id AS node_id, hops, m.xgb_score AS score ORDER BY hops, score DESC"""
+
+
+def q_path(max_hops):
+    return f"""
+        MATCH (a:Tx {{id: $a}}), (b:Tx {{id: $b}})
+        MATCH p = shortestPath((a)-[:SENDS_TO*..{int(max_hops)}]-(b))
+        RETURN [n IN nodes(p) | {{node_id: n.id, ground_truth: n.label, score: n.xgb_score, verdict: n.verdict}}] AS path,
+               length(p) AS hops"""
+
+
+Q_FLAGGED = """
+        MATCH (n:Tx {id: $id})
+        OPTIONAL MATCH (n)-[:SENDS_TO]-(m:Tx)
+        WITH n, collect(DISTINCT m) AS ms
+        RETURN n.id AS node_id, size(ms) AS neighbors,
+               size([m IN ms WHERE m.xgb_score >= $thr]) AS flagged_neighbors,
+               size([m IN ms WHERE m.label = 'illicit']) AS known_illicit_neighbors"""
+
+
+def cypher_text(neighbor_hops=2, illicit_hops=3, max_path_hops=8):
+    """The query text the endpoints run, de-indented for display. No database access."""
+    import textwrap
+    tidy = lambda q: textwrap.dedent(q).strip()  # noqa: E731
+    return {"neighbors": tidy(q_neighbors(int(neighbor_hops))), "illicit": tidy(q_illicit(int(illicit_hops))),
+            "path": tidy(q_path(max_path_hops)), "flagged_neighbors": tidy(Q_FLAGGED)}
+
+
 class Neo4jStore:
     def __init__(self, uri=None, user=None, password=None):
         self.driver = GraphDatabase.driver(uri or config.NEO4J_URI,
@@ -94,42 +137,20 @@ class Neo4jStore:
     def neighbors_within(self, node_id, hops=2, limit=100):
         """Every transaction within `hops` edges of a node (either direction), nearest first."""
         hops = self._hops(hops)
-        q = f"""
-        MATCH p = (n:Tx {{id: $id}})-[:SENDS_TO*1..{hops}]-(m:Tx)
-        WITH m, min(length(p)) AS hops
-        RETURN m.id AS node_id, hops, m.label AS ground_truth, m.xgb_score AS score, m.verdict AS verdict
-        ORDER BY hops, score DESC LIMIT $limit"""
-        return self._run(q, id=node_id, limit=int(limit))
+        return self._run(q_neighbors(hops), id=node_id, limit=int(limit))
 
     def illicit_within(self, node_id, hops=2):
         """Known-illicit transactions within `hops` of a node: is it sitting next to a confirmed
         fraud ring? (label comes from Elliptic's ground truth, not from the model.)"""
         hops = self._hops(hops)
-        q = f"""
-        MATCH p = (n:Tx {{id: $id}})-[:SENDS_TO*1..{hops}]-(m:Tx {{label: 'illicit'}})
-        WHERE m.id <> $id
-        WITH m, min(length(p)) AS hops
-        RETURN m.id AS node_id, hops, m.xgb_score AS score ORDER BY hops, score DESC"""
-        return self._run(q, id=node_id)
+        return self._run(q_illicit(hops), id=node_id)
 
     def shortest_path(self, source, target, max_hops=8):
         """Shortest undirected path between two transactions (e.g. two flagged accounts)."""
-        q = f"""
-        MATCH (a:Tx {{id: $a}}), (b:Tx {{id: $b}})
-        MATCH p = shortestPath((a)-[:SENDS_TO*..{int(max_hops)}]-(b))
-        RETURN [n IN nodes(p) | {{node_id: n.id, ground_truth: n.label, score: n.xgb_score, verdict: n.verdict}}] AS path,
-               length(p) AS hops"""
-        rows = self._run(q, a=source, b=target)
+        rows = self._run(q_path(max_hops), a=source, b=target)
         return rows[0] if rows else None
 
     def flagged_neighbor_counts(self, node_id, flag_threshold):
         """Direct neighbors, and how many are flagged by the model / known illicit."""
-        q = """
-        MATCH (n:Tx {id: $id})
-        OPTIONAL MATCH (n)-[:SENDS_TO]-(m:Tx)
-        WITH n, collect(DISTINCT m) AS ms
-        RETURN n.id AS node_id, size(ms) AS neighbors,
-               size([m IN ms WHERE m.xgb_score >= $thr]) AS flagged_neighbors,
-               size([m IN ms WHERE m.label = 'illicit']) AS known_illicit_neighbors"""
-        rows = self._run(q, id=node_id, thr=float(flag_threshold))
+        rows = self._run(Q_FLAGGED, id=node_id, thr=float(flag_threshold))
         return rows[0] if rows else None

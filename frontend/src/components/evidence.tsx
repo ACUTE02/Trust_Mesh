@@ -145,8 +145,8 @@ export function CaveatNote({ children, title }: { children: ReactNode; title?: s
 
 export function Section({ title, children, id }: { title: string; children: ReactNode; id?: string }) {
   return (
-    <section id={id} className="mt-16" aria-labelledby={id ? `${id}-h` : undefined}>
-      <h2 id={id ? `${id}-h` : undefined} className="mb-5 text-xl">
+    <section id={id} className="mt-20" aria-labelledby={id ? `${id}-h` : undefined}>
+      <h2 id={id ? `${id}-h` : undefined} className="mb-6 text-xl">
         {title}
       </h2>
       {children}
@@ -165,16 +165,16 @@ export function Legend() {
         <span className="fill-shortcut inline-block h-3 w-10" aria-hidden /> Hatched: a shortcut, not a result
       </li>
       <li className="flex items-center gap-3">
-        <span className="planned inline-block h-3 w-10" aria-hidden /> Dashed: designed or planned, not built or not run
+        <span className="planned inline-block h-3 w-10" aria-hidden /> Dashed: designed, but not built or not run yet
       </li>
       <li className="flex items-center gap-3">
-        <span className="bracket inline-block w-10" aria-hidden /> Bracket: a seed spread or a confidence interval
+        <span className="bracket inline-block w-10" aria-hidden /> Bracket: how much a score moves between repeat runs, or its margin of error
       </li>
       <li className="flex items-center gap-3 sm:col-span-2">
         <span className="marker" aria-hidden>
           P1D
         </span>
-        Yellow tag: the run a row's numbers come from. Select it to see the file.
+        Yellow tag: which experiment a number comes from. Select it to see the source file.
       </li>
     </ul>
   );

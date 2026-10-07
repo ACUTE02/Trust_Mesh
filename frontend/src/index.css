@@ -118,7 +118,8 @@ button, input, select { font: inherit; color: inherit; }
   font-weight: 600;
   cursor: pointer;
 }
-.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+/* Disabled: no fading (that failed contrast). A dashed outline and full-strength secondary text instead. */
+.btn:disabled { background: transparent; color: var(--ink-soft); border: 1.5px dashed var(--ink-soft); cursor: not-allowed; }
 .btn-quiet { background: transparent; color: var(--ink); }
 .field {
   background: var(--sheet);

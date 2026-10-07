@@ -48,7 +48,9 @@ Open **http://localhost:8080**. Everything runs on this machine; there is no clo
 | `/graph` Graph Engine | The full leaderboard, three checks on it, and a live desk: score a transaction and see its neighbourhood from Neo4j |
 | `/voice` Voice Engine | The silence shortcut, the model progression, the generalisation tests, and a live desk: score your own recording |
 
-Light and dark themes (the first visit follows the operating system). Screenshots of the pages' empty states:
+Each page reads in plain language by default; "Show the detail for engineers" opens the exact terms, protocol and
+system detail. Light and dark themes (the first visit follows the operating system). To try everything yourself,
+step by step: `docs/HOW_TO_TEST_MYSELF.md`. On Windows, `start.bat` starts the whole stack and `stop.bat` stops it. Screenshots of the pages' empty states:
 `docs/frontend_screenshots/` (three widths, both themes). They contain aggregate results only.
 
 ![Overview page, light theme](docs/frontend_screenshots/landing_1440_light.png)

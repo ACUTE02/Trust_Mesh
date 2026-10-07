@@ -350,3 +350,12 @@ def test_cors_allows_only_configured_origins(client):
 def test_voice_response_reports_trimmed_silence(client):
     body = client.post("/voice/score", data={"clip": "demo.wav"}).json()
     assert {"lead_silence_s", "trail_silence_s", "scored_seconds"} <= set(body)
+
+
+def test_cypher_text_endpoint_returns_the_queries_the_store_runs(client):
+    from serving.neo4j_store import Q_FLAGGED, q_neighbors
+    body = client.get("/graph/query/cypher?hops=2").json()
+    assert set(body) == {"neighbors", "illicit", "path", "flagged_neighbors"}
+    assert body["neighbors"].split() == q_neighbors(2).split()
+    assert body["flagged_neighbors"].split() == Q_FLAGGED.split()
+    assert "SENDS_TO*1..2" in body["neighbors"] and "SENDS_TO*1..3" in body["illicit"]

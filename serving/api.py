@@ -165,6 +165,12 @@ def create_app(graph=None, voice=None, neo4j=None, cases=None, load_on_startup=T
         known_node(node_id)
         return graph_svc().explain(node_id)
 
+    @app.get("/graph/query/cypher")
+    def q_cypher(hops: int = Query(2, ge=1, le=4)):
+        """The exact Cypher text the query endpoints run (for the site's technical view). No database call."""
+        from .neo4j_store import cypher_text
+        return cypher_text(neighbor_hops=hops)
+
     @app.get("/graph/query/neighbors/{node_id}")
     def q_neighbors(node_id: int, hops: int = Query(2, ge=1, le=4), limit: int = Query(100, ge=1, le=500)):
         known_node(node_id)

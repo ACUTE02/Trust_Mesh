@@ -244,3 +244,77 @@ figures; the site shows the log's and says so).
 5. **Spec defaults** you may overrule: the combined case desk is on the landing page; no email or phone is shown.
 6. **Sync the second log copy** (`project.md` is stale and was left alone, as instructed).
 7. Anything on Kaggle, including a seeded re-run if you want issue #45 settled.
+
+## Revision 1 — easy language first, technical detail on request (2026-10-08)
+
+Spec: `PHASE_2_FRONTEND_REVISION_1.md` (parent `docs/` folder). Test counts after this revision:
+
+- Python unit tests (`pytest tests`): 109 passed
+- Frontend tests (inside `npm run build`): 26 passed
+- `scripts/verify_serving.py` against the Docker stack: 11 of 11 ok
+
+**What changed**
+- **Two layers on all three pages.** The default layer is plain language. A "Show the detail for engineers" button
+  (one per page, remembered for the browser session) opens every "For engineers" block on that page: protocol, exact
+  model names, full leaderboards, intervals, terse limits and a glossary.
+- **New headlines and captions** in the style the revision asks for. Every score now has a line beside it saying what
+  it means and whether higher or lower is better. Metric and model names (PR-AUC, EER, XGBoost and so on) no longer
+  appear in the default layer; a test fails the build if one does.
+- **Landing page shortened and reordered:** instrument, "What TrustMesh does" (three lines), two engine cards that are
+  deliberately not twins, the combined case desk with its fixed caveat, an honest status list (measured /
+  demonstration only / designed, not built), then "For engineers": a hand-built system diagram, a footprint table, a
+  verification strip and an eight-row decisions table. The old "What the evidence shows" and "What was cut" sections
+  were removed from this page because they repeated the engine pages.
+- **Plain figures are derived entries.** "About 1.7 in 100", "0.75" and six more are registered in the data module with
+  the entry they come from and the formula; `scripts/check_frontend_numbers.py` recomputes each one (81 entries, all
+  match). The page test was tightened: it now also rejects any one-decimal number and any "N in 100" that is not from
+  the data module. Verified by planting "About 3.25 in 100" on the landing page: the build failed, and passed again
+  once it was removed.
+- **Technical view on each desk** (off by default): every request the page made, its status, the round-trip time
+  measured in the browser, the raw response, the model and weights file the service reports (the seed is read from
+  the file name), and on the graph desk the Cypher text. The Cypher comes from a new read-only endpoint,
+  `/graph/query/cypher`, which returns the same query functions the store runs (one new Python test).
+- **Fixes from the screenshots:** the legend no longer touches "Datasets and citations" (a rule and space between);
+  the disabled "Score this clip" button was a faded button and is now a dashed outline with full-strength secondary
+  text (6.0:1 in light, 8.2:1 in dark against the page) plus the words "Add a recording first."
+- **Found and fixed while testing:** a page opened while the service was still loading its models showed "service not
+  running" until reloaded, because `/health` was asked only once. It now retries for about 75 seconds.
+- **New guide:** `docs/HOW_TO_TEST_MYSELF.md`.
+- `start.bat` and `stop.bat` (added on the owner's request before this revision) are now committed.
+- No model code, no training, no push, no deploy. The only serving change is the read-only Cypher-text endpoint.
+
+**Checks run**
+- Number check: 81 of 81. Build: clean, 26 frontend tests. Python: 109 passed. `verify_serving.py`: 11 of 11.
+- Clicked through in the browser against the Docker stack, with the synthetic tone:
+  the combined desk (graph only, then graph plus recording, Technical view shown and hidden); the graph desk
+  (score, neighbours, Technical view showing five requests and the Cypher, a clear error for transaction 999999, the
+  engineer toggle); the voice desk (score, levels, Technical view, the disabled button's new style).
+- 18 empty-state screenshots re-captured at 390, 768 and 1440 px in both themes: no horizontal overflow in any, and
+  `check_no_dataset_outputs.py` passes on them. They show the default (plain) layer only.
+
+**Captions I could not fully simplify without a new claim, or that break a rule**
+- The revision's examples say "calls". The data are recordings, not phone calls, so the site says "recordings".
+- The voice score's meaning line has a 16-word sentence ("How often it gets a recording wrong, when missed fakes and
+  false alarms are equally common."). Shorter versions dropped the "equally common" condition, which is the definition.
+- The hero keeps the word "split", as the revision's fixed caption requires, and explains both kinds beneath it.
+- "A large ready-made speech model with a small add-on" is as plain as the chosen model gets without saying how it
+  was pre-trained, which the project log does not record.
+- "Voice model D" still appears in the default layer where the page reports which model the service is running; it
+  comes from the service and is not a headline. The names "Graph Engine", "Voice Engine" and "Visual Engine" remain
+  in the navigation and the status list.
+- A few explanatory sentences in the default layer run to 16 to 20 words (the camouflage explanation, the levels
+  caveat, two limits). They were read aloud for jargon; none was found, but they were not all cut to 15 words.
+- No reading-level tool was run. "About grade 8" was judged by reading, not measured.
+- Left out rather than invented: a plain figure for the camouflage result (it is a share caught, already plain), and
+  any statement of how the speech model was pre-trained.
+
+**Not tested**
+- The microphone button and any real speech recording (only a synthetic tone was scored).
+- Keyboard-only use, screen readers, and reduced motion with the system setting on.
+- The engineer layer and the Technical view at 390 and 768 px in a real browser (the unit tests render them; the
+  screenshots show the default layer only). The system diagram scrolls sideways inside its own box on a phone by design;
+  that was not looked at on a phone.
+- The retry of `/health` was seen to be needed (the page was caught in the "down" state), but the fixed build was not
+  re-observed recovering during a restart.
+- The steps in `docs/HOW_TO_TEST_MYSELF.md` that need a person: recording, a text-to-speech clip, a phone.
+- A clean-machine start, any deployment, and everything else listed as untested under WP8 and WP9.

@@ -43,8 +43,8 @@ nothing, exposes nothing, and needs no teardown. Deployment adds value in only o
 1. Start Docker Desktop and wait until it says it is running.
 2. In `E:\TrustMesh\TrustMesh_CODE`: `docker compose up -d --build`. The first build downloads about 1 GB of
    packages; later starts take about a minute. The loader fills Neo4j on the first start (about 80 seconds) and exits.
-3. Wait until http://localhost:8080 shows "Serving now: Voice model D" in the status table (the API loads the encoder
-   for 20 to 60 seconds after starting).
+3. Double-clicking `start.bat` does steps 1 to 3 for you. Wait until the "Voice check" card on
+   http://localhost:8080 shows "Running now: Voice model D" (the API loads the encoder for 20 to 60 seconds).
 4. Check: `.venv\Scripts\python.exe scripts\verify_serving.py` should print only `[ok]` lines.
    (It writes test rows into the cases table; that table is not shown on the site.)
 5. **Warm-up:** on the Voice Engine page, score one of your clips once before recording. The first scoring call
@@ -62,12 +62,12 @@ Say only what is on the page; every sentence below is backed by the project log.
 1. **Overview, the instrument (20 s).** "This is one graph neural network scored two ways." Leave it on *Random
    split*: 0.7730. Click **Time split**: 0.5115. "Same model, same settings. A random split trains and tests on the
    same period; a time split tests on later transactions. The random split overstated it by 0.26."
-2. **Status table (15 s).** "Two engines are measured. On the graph, plain XGBoost with three cheap graph statistics
+2. **The two cards under "What each check scored" (15 s).** "Two engines are measured. On the graph, plain XGBoost with three cheap graph statistics
    scores 0.7482; the best graph neural network, after more than 175 tuning trials, scores 0.5913. The voice model
    scores an equal error rate of 0.0166 on my own split of ASVspoof, which is not the official protocol. The third
    engine is designed and not built: it has no results, so it gets a dashed row."
 3. **Click a yellow tag (10 s).** "Every number carries the run it came from and the file."
-4. **Voice Engine page, the instrument (25 s).** "The first voice model scored 0.0097. It was reading the silence."
+4. **Voice Engine page, the instrument (25 s).** "The first voice model scored 0.0097. It was cheating: it listened to the silence."
    Click **Silence removed**: 0.2380. "Bonafide clips in this dataset start with more silence. So I trim silence
    before training and before scoring." Scroll to the ladder: "these hatched rows are the shortcut, kept on the page
    so nobody mistakes them for results."
@@ -80,9 +80,10 @@ Say only what is on the page; every sentence below is backed by the project log.
 7. **Graph Engine page (15 s).** Show the leaderboard and the three checks. Mention the limits list at the bottom.
    (Graph desk: only if you decided rule 2 allows it. If so: enter an example, **Score this transaction**, and say
    "the score is XGBoost's; the neighbourhood is from Neo4j and decided nothing".)
-8. **Close (10 s).** Overview, "What was cut": "No cloud deployment, two voice models never completed a run, the
-   visual engine is paused, and the combined score has no measured accuracy because no dataset has the same case in
-   both signals."
+8. **Close (10 s).** Overview, "What is tested, and what is not": "Two checks are measured. The combined warning is a
+   demonstration with no measured accuracy, because no dataset has the same case in both. The visual check is
+   designed and not built." For a technical audience, press "Show the detail for engineers" first: the exact terms,
+   the system diagram and the decisions table are there.
 
 ## 5. Hosting analysis (only if you want a live link)
 

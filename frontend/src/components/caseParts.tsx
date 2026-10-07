@@ -70,21 +70,38 @@ export function errorText(e: unknown): string {
   return e instanceof ApiError || e instanceof Error ? e.message : "Something went wrong. Try again.";
 }
 
-/** /health, fetched once per page. null = still loading; "down" = the API did not answer. */
+/**
+ * /health for a page. null = still asking; "down" = the service did not answer. A failed request is
+ * retried a few times, so a page opened while the stack is still starting corrects itself.
+ */
 export function useHealth(): Health | null | "down" {
   const [health, setHealth] = useState<Health | null | "down">(null);
   useEffect(() => {
     let live = true;
-    api
-      .health()
-      .then((h) => live && setHealth(h))
-      .catch(() => live && setHealth("down"));
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let attempts = 0;
+    const ask = () => {
+      attempts += 1;
+      api
+        .health()
+        .then((h) => live && setHealth(h))
+        .catch(() => {
+          if (!live) return;
+          setHealth("down");
+          if (attempts < HEALTH_ATTEMPTS) timer = setTimeout(ask, HEALTH_RETRY_MS);
+        });
+    };
+    ask();
     return () => {
       live = false;
+      clearTimeout(timer);
     };
   }, []);
   return health;
 }
+
+const HEALTH_ATTEMPTS = 15; // about 75 seconds: longer than the service takes to load its models
+const HEALTH_RETRY_MS = 5000;
 
 function Row({ name, children, planned = false }: { name: string; children: ReactNode; planned?: boolean }) {
   return (
@@ -115,11 +132,11 @@ export function CaseCard({
   return (
     <div data-testid="case-card">
       <table className="stack-sm w-full border-collapse text-sm">
-        <caption className="sr-only">Scores for this case, one row per signal</caption>
+        <caption className="sr-only">Scores for this case, one row per check</caption>
         <thead>
           <tr className="text-left text-xs text-ink-soft">
             <th scope="col" className="pb-2 font-normal">
-              Signal
+              Check
             </th>
             <th scope="col" className="pb-2 font-normal">
               Score
@@ -133,7 +150,7 @@ export function CaseCard({
           </tr>
         </thead>
         <tbody>
-          <Row name="Graph">
+          <Row name="Transaction">
             <td className="py-3 pr-4 align-top text-lg" data-testid="graph-score" data-label="Score">
               {graph ? <Score value={graph.score} /> : EMPTY}
             </td>
@@ -141,7 +158,7 @@ export function CaseCard({
             <td className="py-3 align-top">
               {graph ? (
                 <>
-                  XGBoost on raw features plus graph statistics.{" "}
+                  The transaction model.{" "}
                   <span className="text-ink-soft">
                     Known label: {graph.ground_truth}; {graph.split} period{graph.in_sample ? ", seen in training" : ""}.
                   </span>
@@ -178,7 +195,7 @@ export function CaseCard({
             </td>
             <td className="py-3 pr-4 align-top" data-label="Verdict">{combined ? <VerdictTag verdict={combined.combined_verdict} /> : EMPTY}</td>
             <td className="py-3 align-top">
-              {combined ? "Weighted average of the graph and voice scores." : <span className="text-ink-soft">Needs both a graph score and a voice score.</span>}
+              {combined ? "The average of the two scores above." : <span className="text-ink-soft">Needs both a transaction score and a voice score.</span>}
             </td>
           </Row>
         </tbody>
@@ -194,8 +211,8 @@ export function CaseCard({
 export function CombinedNote() {
   return (
     <CaveatNote>
-      Placeholder weights (<Num id="fusion.weight" /> and <Num id="fusion.weight" />). No dataset contains the same case in both
-      signals, so this combined score has no measured accuracy.
+      The combined score is a demonstration of the idea. It has no measured accuracy, because no dataset contains the same
+      case in both checks. The two scores are simply averaged (<Num id="fusion.weight" /> and <Num id="fusion.weight" />).
     </CaveatNote>
   );
 }

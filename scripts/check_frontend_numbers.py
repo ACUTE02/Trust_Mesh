@@ -3,7 +3,8 @@
 frontend/src/data/evidence.json gives each entry a source: a repo file plus either `key` (a path into
 that JSON file) or `text` (a string that must appear in that file, and must contain the value as shown).
 This script resolves every source and fails if a value, spread or interval does not match at the
-number of decimals the page displays.
+number of decimals the page displays. A derived entry (a plain-language figure such as "1.7 in 100")
+must name the sourced entry it comes from and its formula, and is recomputed from that entry.
 
 Run: .venv\\Scripts\\python.exe scripts/check_frontend_numbers.py
 """
@@ -51,6 +52,16 @@ def main():
         for field in ("measures", "runDate", "phase"):
             if not e.get(field):
                 problems.append(f"{name}: missing {field}")
+        if src.get("derivedFrom"):  # a plain-language restatement of another sourced entry
+            parent = entries.get(src["derivedFrom"])
+            if parent is None or parent.get("source", {}).get("derivedFrom"):
+                problems.append(f"{name}: derivedFrom must name a sourced (non-derived) entry")
+            elif not src.get("formula"):
+                problems.append(f"{name}: derived entry has no formula")
+            elif shown(parent["value"] * src.get("scale", 1), dec) != shown(e["value"], dec):
+                problems.append(f"{name}: page shows {shown(e['value'], dec)}, but "
+                                f"{src['derivedFrom']} x {src.get('scale', 1)} = {parent['value'] * src.get('scale', 1)}")
+            continue
         if not src.get("file") or not (src.get("key") or src.get("text")):
             problems.append(f"{name}: no source")
             continue

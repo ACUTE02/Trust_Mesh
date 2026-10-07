@@ -22,6 +22,8 @@ export function TwoScoresInstrument({
   hue,
   ticks,
   lines,
+  meaning,
+  shortcutNote = "This score is a shortcut, not a real result.",
 }: {
   title: string;
   first: Side;
@@ -32,6 +34,8 @@ export function TwoScoresInstrument({
   hue: "ledger" | "spectrum";
   ticks: EvidenceTick[];
   lines: string[]; // fixed sentences under the instrument
+  meaning: string; // what the score means, in plain words, and which direction is better
+  shortcutNote?: string;
 }) {
   const name = useId();
   const [which, setWhich] = useState<0 | 1>(0);
@@ -80,16 +84,15 @@ export function TwoScoresInstrument({
         <span className="font-semibold leading-none" style={{ fontSize: "var(--text-readout)" }}>
           <Num id={active.id} spread={false} />
         </span>
-        <span className="text-sm text-ink-soft">
-          {e.metric}
-          {shortcut ? ". A shortcut, not a result." : ""}
-        </span>
+        {shortcut && <span className="text-sm font-semibold text-flag">{shortcutNote}</span>}
         {which === 1 && differenceId && (
           <span className="text-base">
             a difference of <Num id={differenceId} />
           </span>
         )}
       </div>
+
+      <p className="measure mt-2 mb-0 text-sm text-ink-soft">{meaning}</p>
 
       {/* The axis. The bar is the selected state; a thin tick keeps the other state in view. */}
       <div className="mt-5" aria-hidden>

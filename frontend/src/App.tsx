@@ -112,7 +112,7 @@ function Footer() {
       <div className="mx-auto max-w-[76rem] px-5 py-12 sm:px-8">
         <h2 className="mb-4 text-lg">How to read the marks</h2>
         <Legend />
-        <h2 className="mt-12 mb-4 text-lg">Datasets and citations</h2>
+        <h2 className="mt-16 mb-5 border-t border-rule pt-10 text-lg">Datasets and citations</h2>
         <DatasetCitations />
         <p className="mt-12 mb-0 text-sm">
           Built by Ayushmaan Gupta, B.Tech CSE (AI &amp; ML), VIT Bhopal.{" "}

@@ -78,23 +78,47 @@ export class ApiError extends Error {
   }
 }
 
+/** One request as the browser saw it. */
+export interface ApiCall {
+  method: string;
+  path: string;
+  status: number | null;
+  ms: number;
+  body: unknown;
+}
+
+let callLog: ApiCall[] = [];
+/** Start a fresh log before a desk action; read it afterwards. */
+export function startCallLog(): void {
+  callLog = [];
+}
+export function readCallLog(): ApiCall[] {
+  return [...callLog];
+}
+
 const UNREACHABLE =
   "The scoring service didn't answer. Start the stack with docker compose up and try again.";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const method = init?.method ?? "GET";
+  const started = performance.now();
   let response: Response;
   try {
     response = await fetch(`/api${path}`, init);
   } catch {
+    callLog.push({ method, path, status: null, ms: performance.now() - started, body: null });
     throw new ApiError(UNREACHABLE);
   }
-  if (response.status === 502 || response.status === 504) throw new ApiError(UNREACHABLE, response.status);
   let body: unknown = null;
+  let parsed = true;
   try {
     body = await response.json();
   } catch {
-    if (!response.ok) throw new ApiError(UNREACHABLE, response.status);
+    parsed = false;
   }
+  callLog.push({ method, path, status: response.status, ms: performance.now() - started, body });
+  if (response.status === 502 || response.status === 504) throw new ApiError(UNREACHABLE, response.status);
+  if (!parsed && !response.ok) throw new ApiError(UNREACHABLE, response.status);
   if (!response.ok) {
     const detail = (body as { detail?: unknown } | null)?.detail;
     throw new ApiError(typeof detail === "string" ? detail : `The service answered with an error (${response.status}).`, response.status);
@@ -123,6 +147,7 @@ export const api = {
     request<{ neighbors: number; flagged_neighbors: number; known_illicit_neighbors: number }>(
       `/graph/query/flagged-neighbors/${id}`,
     ),
+  cypher: (hops: number) => request<Record<string, string>>(`/graph/query/cypher?hops=${hops}`),
   path: (source: number, target: number) =>
     request<{ connected: boolean; path: null | { hops: number; path: { node_id: number; ground_truth: string; verdict: Verdict }[] } }>(
       `/graph/query/path?source=${source}&target=${target}`,
