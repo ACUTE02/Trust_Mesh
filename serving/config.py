@@ -44,3 +44,6 @@ RATE_LIMIT_PER_MINUTE = int(os.environ.get("TRUSTMESH_RATE_LIMIT_PER_MINUTE", 30
 # Set to 1 only behind a reverse proxy you control (the bundled nginx): the client address is then
 # taken from X-Forwarded-For instead of the socket.
 TRUST_PROXY = os.environ.get("TRUSTMESH_TRUST_PROXY", "0") == "1"
+# Recording mode: the site masks real transaction numbers, labels and scores on the graph desks, so a video
+# can show the flow without publishing per-transaction results. The API itself is unchanged. Default off.
+RECORDING_MODE = os.environ.get("TRUSTMESH_RECORDING_MODE", "0") == "1"

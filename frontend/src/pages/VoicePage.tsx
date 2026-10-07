@@ -124,6 +124,11 @@ function VoiceDesk() {
             </span>
             <VerdictTag verdict={result.verdict} />
           </div>
+          {result.warnings && result.warnings.length > 0 && (
+            <p role="alert" className="measure mt-3 mb-0 border-l-4 border-flag bg-sheet px-3 py-2 text-sm" data-testid="voice-warnings">
+              {result.warnings.join(" ")}
+            </p>
+          )}
           <p className="measure mt-3 mb-0 text-sm">
             Scored by: <ModelInUse model={result.model} requested={result.model_requested} fallback={result.fallback_used} />.
           </p>

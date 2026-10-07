@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useContext, useEffect, useState, type ReactNode } from "react";
 import { ApiError, api, type GraphScore, type Health, type Verdict, type VoiceScore } from "../lib/api";
-import { CaveatNote, Live, Num } from "./evidence";
+import { CaveatNote, Live, MaskContext, Num } from "./evidence";
 
 /** Shows whichever voice model the API reports. Never a hard-coded name: the fallback can occur. */
 export function ModelInUse({
@@ -38,6 +38,8 @@ const VERDICT_WORDS: Record<Verdict, string> = { low: "low risk", medium: "mediu
 
 /** Verdict as words plus a weight of rule, never colour alone. */
 export function VerdictTag({ verdict }: { verdict: Verdict }) {
+  const masked = useContext(MaskContext);
+  if (masked) return <span className="inline-block border-[1.5px] border-dashed border-ink-soft px-2 py-0.5 text-xs text-ink-soft">hidden</span>;
   const style =
     verdict === "high" ? "bg-ink text-slab" : verdict === "medium" ? "border-[1.5px] border-ink" : "border-[1.5px] border-dashed border-ink-soft text-ink-soft";
   return <span className={`inline-block px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${style}`}>{VERDICT_WORDS[verdict]}</span>;
@@ -124,7 +126,9 @@ export function CaseCard({
   graph,
   voice,
   combined,
+  mask = false,
 }: {
+  mask?: boolean; // recording mode: hide what belongs to the real transaction (its row and the combined row)
   graph: GraphScore | null;
   voice: VoiceScore | null;
   combined: { combined_score: number; combined_verdict: Verdict; weights: Record<string, number> } | null;
@@ -152,16 +156,20 @@ export function CaseCard({
         <tbody>
           <Row name="Transaction">
             <td className="py-3 pr-4 align-top text-lg" data-testid="graph-score" data-label="Score">
-              {graph ? <Score value={graph.score} /> : EMPTY}
+              <MaskContext.Provider value={mask}>{graph ? <Score value={graph.score} /> : EMPTY}</MaskContext.Provider>
             </td>
-            <td className="py-3 pr-4 align-top" data-label="Verdict">{graph ? <VerdictTag verdict={graph.verdict} /> : EMPTY}</td>
+            <td className="py-3 pr-4 align-top" data-label="Verdict">
+              <MaskContext.Provider value={mask}>{graph ? <VerdictTag verdict={graph.verdict} /> : EMPTY}</MaskContext.Provider>
+            </td>
             <td className="py-3 align-top">
               {graph ? (
                 <>
                   The transaction model.{" "}
-                  <span className="text-ink-soft">
-                    Known label: {graph.ground_truth}; {graph.split} period{graph.in_sample ? ", seen in training" : ""}.
-                  </span>
+                  {!mask && (
+                    <span className="text-ink-soft">
+                      Known label: {graph.ground_truth}; {graph.split} period{graph.in_sample ? ", seen in training" : ""}.
+                    </span>
+                  )}
                 </>
               ) : (
                 EMPTY
@@ -191,15 +199,22 @@ export function CaseCard({
           </tr>
           <Row name="Combined">
             <td className="py-3 pr-4 align-top text-lg" data-testid="combined-score" data-label="Score">
-              {combined ? <Score value={combined.combined_score} /> : EMPTY}
+              <MaskContext.Provider value={mask}>{combined ? <Score value={combined.combined_score} /> : EMPTY}</MaskContext.Provider>
             </td>
-            <td className="py-3 pr-4 align-top" data-label="Verdict">{combined ? <VerdictTag verdict={combined.combined_verdict} /> : EMPTY}</td>
+            <td className="py-3 pr-4 align-top" data-label="Verdict">
+              <MaskContext.Provider value={mask}>{combined ? <VerdictTag verdict={combined.combined_verdict} /> : EMPTY}</MaskContext.Provider>
+            </td>
             <td className="py-3 align-top">
               {combined ? "The average of the two scores above." : <span className="text-ink-soft">Needs both a transaction score and a voice score.</span>}
             </td>
           </Row>
         </tbody>
       </table>
+      {voice?.warnings && voice.warnings.length > 0 && (
+        <p role="alert" className="measure mt-3 mb-0 border-l-4 border-flag bg-sheet px-3 py-2 text-sm" data-testid="voice-warnings">
+          About the recording: {voice.warnings.join(" ")}
+        </p>
+      )}
       <div className="mt-3">
         <CombinedNote />
       </div>
@@ -214,5 +229,18 @@ export function CombinedNote() {
       The combined score is a demonstration of the idea. It has no measured accuracy, because no dataset contains the same
       case in both checks. The two scores are simply averaged (<Num id="fusion.weight" /> and <Num id="fusion.weight" />).
     </CaveatNote>
+  );
+}
+
+/** True when the service runs in recording mode. */
+export function isRecording(health: Health | null | "down"): boolean {
+  return !!health && health !== "down" && health.recording_mode === true;
+}
+
+export function RecordingBanner() {
+  return (
+    <p role="note" className="measure m-0 mb-4 border-l-4 border-ink bg-sheet px-3 py-2 text-sm" data-testid="recording-banner">
+      Recording mode is on. Real transaction numbers, labels and scores are hidden on this desk.
+    </p>
   );
 }

@@ -39,10 +39,16 @@ export function TwoScoresInstrument({
 }) {
   const name = useId();
   const [which, setWhich] = useState<0 | 1>(0);
-  const [drawn, setDrawn] = useState(false); // the single page-load motion: the bar draws to its first value
+  // The single page-load motion: the bar draws to its first value. With reduced motion it starts drawn.
+  // A timer backs up the animation frame, which a hidden or throttled tab may never deliver.
+  const [drawn, setDrawn] = useState(() => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false);
   useEffect(() => {
-    const t = requestAnimationFrame(() => setDrawn(true));
-    return () => cancelAnimationFrame(t);
+    const frame = requestAnimationFrame(() => setDrawn(true));
+    const timer = setTimeout(() => setDrawn(true), 120);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
   }, []);
 
   const sides = [first, second];

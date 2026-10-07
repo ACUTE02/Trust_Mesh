@@ -32,12 +32,21 @@ MODELS = {  # name -> (weights glob, preferred file, pooling)
 UNCALIBRATED = {"high": 0.5, "medium": 0.2,
                 "source": "uncalibrated default (no held-out test scores for this model are available locally)"}
 AUDIO_SUFFIXES = {".wav", ".flac", ".ogg", ".mp3"}
+# Input checks added after the self-test (2026-10-08). They guard the service, they are not part of the model.
+SILENCE_PEAK = 1e-4       # below this peak amplitude (about -80 dBFS) the recording is treated as silent
+MIN_RELIABLE_SOUND_S = 1.0  # less sound than this after trimming: scored, but flagged as low confidence
 
 
 def decode_audio(blob, max_seconds=None):
     """Decode with libsndfile. Anything it cannot parse as audio raises (the API turns that into a 422).
     The duration is read from the header first, so an over-long file is refused before it is decoded."""
-    with sf.SoundFile(io.BytesIO(blob)) as f:
+    if not blob:
+        raise ValueError("the file is empty")
+    try:
+        handle = sf.SoundFile(io.BytesIO(blob))
+    except sf.LibsndfileError:
+        raise ValueError("the file is not audio this service can read (use WAV, FLAC, OGG or MP3)") from None
+    with handle as f:
         seconds = f.frames / f.samplerate
         if max_seconds is not None and seconds > max_seconds:
             raise ValueError(f"audio is {seconds:.0f} s long; the limit is {max_seconds:.0f} s")
@@ -114,7 +123,13 @@ class VoiceService:
         name = model or self.default_model
         if name not in self.heads:
             raise KeyError(f"voice model {name!r} is not loaded (loaded: {sorted(self.heads)})")
+        if len(wave) == 0 or float(np.max(np.abs(wave))) < SILENCE_PEAK:
+            raise ValueError("the recording is silent, so there is nothing to score")
         clip, stats = prepare_clip(wave, sr)
+        warnings = []
+        if stats["speech_s"] < MIN_RELIABLE_SOUND_S:
+            warnings.append(f"Only {stats['speech_s']:.1f} s of sound after trimming silence. "
+                            f"That is too little for a reliable result (at least {MIN_RELIABLE_SOUND_S:.0f} s is needed).")
         with self._lock:
             pooled = self.encoder.pooled(torch.from_numpy(clip).unsqueeze(0))  # [1, layers, 2*hidden]
             feats = self.encoder.mean_only(pooled) if MODELS[name][2] == "mean" else pooled
@@ -125,6 +140,7 @@ class VoiceService:
         threshold = self._threshold(name)
         return {
             "score": spoof_prob, "verdict": self.verdict(spoof_prob, name),
+            "low_confidence": bool(warnings), "warnings": warnings,
             "model": name, "model_requested": model or self.requested_default,
             "fallback_used": name != (model or self.requested_default),
             "bonafide_logit": bonafide_logit,

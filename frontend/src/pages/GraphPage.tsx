@@ -3,11 +3,11 @@ import { Link } from "react-router-dom";
 import { DemoState, Score, VerdictTag, errorText } from "../components/caseParts";
 import { DotPlot, type PlotRow } from "../components/DotPlot";
 import { EngineerLayer, EngineerToggle, ForEngineers, GRAPH_SCORE_MEANING, Glossary, Meaning } from "../components/engineers";
-import { CaveatNote, EvidenceRow, Live, Num, Section } from "../components/evidence";
+import { CaveatNote, EvidenceRow, Live, MaskContext, Num, Section } from "../components/evidence";
 import { TechView } from "../components/TechView";
 import examples from "../data/examples.json";
 import { api, readCallLog, startCallLog, type ApiCall, type GraphExplain, type GraphScore, type Neighbour, type Verdict } from "../lib/api";
-import { useHealth } from "../components/caseParts";
+import { RecordingBanner, isRecording, useHealth } from "../components/caseParts";
 
 const LEADERBOARD: PlotRow[] = [
   { id: "graph.xgb12", seedMeanId: "graph.xgb12.mean", label: "XGBoost, raw features plus degree, PageRank and clustering", reference: true },
@@ -57,12 +57,14 @@ interface DeskResult {
 }
 
 /** Neighbourhood as a small ring drawing plus the table that says the same thing. */
-function NeighbourhoodView({ centre, neighbours }: { centre: GraphScore; neighbours: Neighbour[] }) {
+function NeighbourhoodView({ centre, neighbours, mask }: { centre: GraphScore; neighbours: Neighbour[]; mask: boolean }) {
   const rings = [1, 2].map((h) => neighbours.filter((n) => n.hops === h).slice(0, h === 1 ? 14 : 22));
   const size = 300;
   const mid = size / 2;
   const dot = (verdict: Verdict, x: number, y: number, r: number, key: string) =>
-    verdict === "high" ? (
+    mask ? (
+      <circle key={key} cx={x} cy={y} r={r - 1} fill="var(--track)" stroke="var(--ink-soft)" strokeWidth="1.5" />
+    ) : verdict === "high" ? (
       <circle key={key} cx={x} cy={y} r={r} fill="var(--ink)" />
     ) : verdict === "medium" ? (
       <circle key={key} cx={x} cy={y} r={r - 1} fill="var(--sheet)" stroke="var(--ink)" strokeWidth="2" />
@@ -72,7 +74,7 @@ function NeighbourhoodView({ centre, neighbours }: { centre: GraphScore; neighbo
   return (
     <div className="grid gap-6 md:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
       <figure className="m-0">
-        <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-[18rem]" role="img" aria-label={`Transaction ${centre.node_id} at the centre, with ${rings[0].length} neighbours one hop away and ${rings[1].length} two hops away. The table lists them.`}>
+        <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-[18rem]" role="img" aria-label={`The transaction at the centre, with ${rings[0].length} neighbours one hop away and ${rings[1].length} two hops away. The table lists them.`}>
           {[55, 115].map((r) => (
             <circle key={r} cx={mid} cy={mid} r={r} fill="none" stroke="var(--rule)" strokeWidth="1" />
           ))}
@@ -107,7 +109,7 @@ function NeighbourhoodView({ centre, neighbours }: { centre: GraphScore; neighbo
               <tr key={n.node_id} className="rule-t">
                 <td className="py-1.5 pr-3"><Live>{n.node_id}</Live></td>
                 <td className="py-1.5 pr-3"><Live>{n.hops}</Live></td>
-                <td className="py-1.5 pr-3">{n.ground_truth}</td>
+                <td className="py-1.5 pr-3"><Live>{n.ground_truth}</Live></td>
                 <td className="py-1.5 pr-3"><Score value={n.score} /></td>
                 <td className="py-1.5"><VerdictTag verdict={n.verdict} /></td>
               </tr>
@@ -129,6 +131,7 @@ function GraphDesk() {
   const [calls, setCalls] = useState<ApiCall[]>([]);
   const [cypher, setCypher] = useState<Record<string, string> | null>(null);
   const health = useHealth();
+  const mask = isRecording(health);
 
   async function score(raw: string) {
     const id = Number(raw);
@@ -172,7 +175,9 @@ function GraphDesk() {
       const p = await api.path(result.score.node_id, t);
       setPath(
         p.connected && p.path
-          ? `Connected in ${p.path.hops} ${p.path.hops === 1 ? "hop" : "hops"}: ${p.path.path.map((n) => `${n.node_id} (${n.ground_truth})`).join(" to ")}.`
+          ? mask
+            ? `Connected in ${p.path.hops} ${p.path.hops === 1 ? "hop" : "hops"}. The transactions on the path are hidden in recording mode.`
+            : `Connected in ${p.path.hops} ${p.path.hops === 1 ? "hop" : "hops"}: ${p.path.path.map((n) => `${n.node_id} (${n.ground_truth})`).join(" to ")}.`
           : "No path of 8 hops or fewer connects these two transactions.",
       );
     } catch (e) {
@@ -192,7 +197,7 @@ function GraphDesk() {
       >
         <label className="grid gap-1 text-sm font-semibold">
           Transaction number
-          <input className="field num w-40 font-normal" inputMode="numeric" value={input} onChange={(ev) => setInput(ev.target.value)} />
+          <input className="field num w-40 font-normal" inputMode="numeric" type={mask ? "password" : "text"} autoComplete="off" value={input} onChange={(ev) => setInput(ev.target.value)} />
         </label>
         <button type="submit" className="btn" disabled={loading}>
           Score this transaction
@@ -211,7 +216,7 @@ function GraphDesk() {
                   void score(String(t.id));
                 }}
               >
-                {t.id}
+                {mask ? `example ${i + 1}` : t.id}
               </button>
             </span>
           ))}
@@ -223,7 +228,9 @@ function GraphDesk() {
         {!loading && !error && !r && <p className="m-0 text-sm text-ink-soft">Nothing scored yet. Enter a transaction number or pick an example.</p>}
       </div>
 
+      {mask && <RecordingBanner />}
       {r && (
+        <MaskContext.Provider value={mask}>
         <div className="grid gap-8" data-testid="graph-result">
           <div className="grid gap-6 md:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
             <div>
@@ -233,7 +240,7 @@ function GraphDesk() {
                 <VerdictTag verdict={r.score.verdict} />
               </div>
               <p className="mt-2 mb-0 text-sm text-ink-soft">
-                In the dataset this transaction is marked: {r.score.ground_truth}.
+                In the dataset this transaction is marked: <Live>{r.score.ground_truth}</Live>.
                 {r.score.in_sample ? " The model saw it while learning, so this score is not a fair test." : ""}
               </p>
             </div>
@@ -292,7 +299,7 @@ function GraphDesk() {
                 )}
               </p>
               {r.neighbours.length > 0 ? (
-                <NeighbourhoodView centre={r.score} neighbours={r.neighbours} />
+                <NeighbourhoodView centre={r.score} neighbours={r.neighbours} mask={mask} />
               ) : (
                 <p className="m-0 text-sm text-ink-soft">This transaction has no neighbours within two hops.</p>
               )}
@@ -305,7 +312,7 @@ function GraphDesk() {
               >
                 <label className="grid gap-1 text-sm font-semibold">
                   Shortest path to transaction
-                  <input className="field num w-40 font-normal" inputMode="numeric" value={target} onChange={(ev) => setTarget(ev.target.value)} />
+                  <input className="field num w-40 font-normal" inputMode="numeric" type={mask ? "password" : "text"} autoComplete="off" value={target} onChange={(ev) => setTarget(ev.target.value)} />
                 </label>
                 <button type="submit" className="btn btn-quiet">Find the path</button>
               </form>
@@ -334,7 +341,7 @@ function GraphDesk() {
                       <tr key={n.node_id} className="rule-t">
                         <td className="py-1.5 pr-3"><Live>{n.node_id}</Live></td>
                         <td className="py-1.5 pr-3"><Live>{n.attention.toExponential(2)}</Live></td>
-                        <td className="py-1.5">{n.ground_truth}</td>
+                        <td className="py-1.5"><Live>{n.ground_truth}</Live></td>
                       </tr>
                     ))}
                   </tbody>
@@ -345,8 +352,9 @@ function GraphDesk() {
             </div>
           )}
         </div>
+        </MaskContext.Provider>
       )}
-      <TechView calls={calls} health={health} cypher={cypher} />
+      {!mask && <TechView calls={calls} health={health} cypher={cypher} />}
     </div>
   );
 }

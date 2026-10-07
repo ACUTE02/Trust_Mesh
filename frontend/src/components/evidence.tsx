@@ -1,4 +1,4 @@
-import { Fragment, useId, useState, type ReactNode } from "react";
+import { Fragment, createContext, useContext, useId, useState, type ReactNode } from "react";
 import {
   PHASE_NAMES,
   evidence,
@@ -50,8 +50,22 @@ export function Num({ id, spread = true, interval = false }: { id: EvidenceId; s
   );
 }
 
+/**
+ * Recording mode (TRUSTMESH_RECORDING_MODE=1 on the service): inside a masked region every live value
+ * about a real transaction (its number, label, score, verdict) is replaced by the word "hidden".
+ */
+export const MaskContext = createContext(false);
+
 /** Live value from the API (never from the repository). Marked so the number test can tell the two apart. */
 export function Live({ children, title }: { children: ReactNode; title?: string }) {
+  const masked = useContext(MaskContext);
+  if (masked) {
+    return (
+      <span data-live data-masked className="text-ink-soft">
+        hidden
+      </span>
+    );
+  }
   return (
     <span data-live className="num" title={title}>
       {typeof children === "string" || typeof children === "number" ? <Digits text={String(children)} /> : children}

@@ -246,3 +246,22 @@ describe("the technical view", () => {
     expect(text).toContain("No request yet");
   });
 });
+
+// Self-test additions: recording mode masks what belongs to a real transaction; warnings are shown.
+describe("recording mode and warnings", () => {
+  it("masks the transaction row and the combined row, and keeps the owner's own voice score", () => {
+    render(<CaseCard mask graph={GRAPH} voice={VOICE} combined={{ combined_score: 0.55, combined_verdict: "medium", weights: { graph: 0.5, voice: 0.5 } }} />);
+    expect(screen.getByTestId("graph-score").textContent).toBe("hidden");
+    expect(screen.getByTestId("combined-score").textContent).toBe("hidden");
+    expect(screen.getByTestId("voice-score").textContent).toBe("0.2000");
+    const text = screen.getByTestId("case-card").textContent ?? "";
+    expect(text).not.toContain("0.9000");
+    expect(text).not.toContain("illicit");
+    expect(text).toContain("It has no measured accuracy");
+  });
+
+  it("shows the service's warning about a recording beside the scores", () => {
+    render(<CaseCard graph={GRAPH} voice={{ ...VOICE, low_confidence: true, warnings: ["Only 0.3 s of sound after trimming silence."] }} combined={null} />);
+    expect(screen.getByTestId("voice-warnings").textContent).toContain("Only 0.3 s of sound");
+  });
+});

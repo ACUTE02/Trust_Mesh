@@ -9,6 +9,7 @@ must name the sourced entry it comes from and its formula, and is recomputed fro
 Run: .venv\\Scripts\\python.exe scripts/check_frontend_numbers.py
 """
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -18,6 +19,10 @@ _cache = {}
 
 
 def load(rel):
+    # TRUSTMESH_RESULTS_JSON=<file> checks against another copy of artifacts/graph/results.json
+    # (for example the sanitised copy, which has no per-transaction block).
+    if rel == "artifacts/graph/results.json" and os.environ.get("TRUSTMESH_RESULTS_JSON"):
+        rel = os.environ["TRUSTMESH_RESULTS_JSON"]
     path = (ROOT / rel).resolve()
     if path not in _cache:
         text = path.read_text(encoding="utf-8")
@@ -71,7 +76,11 @@ def main():
             problems.append(f"{name}: source file {src['file']} not found")
             continue
         if "key" in src:
-            got = resolve(doc, src["key"]) * src.get("scale", 1)
+            try:
+                got = resolve(doc, src["key"]) * src.get("scale", 1)
+            except (KeyError, IndexError, TypeError):
+                problems.append(f"{name}: key not present in {src['file']}: {src['key']}")
+                continue
             if shown(abs(got), dec) != shown(abs(e["value"]), dec):
                 problems.append(f"{name}: page shows {shown(e['value'], dec)}, source has {got}")
             if "spread" in e:

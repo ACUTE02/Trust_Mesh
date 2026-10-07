@@ -359,3 +359,45 @@ def test_cypher_text_endpoint_returns_the_queries_the_store_runs(client):
     assert body["neighbors"].split() == q_neighbors(2).split()
     assert body["flagged_neighbors"].split() == Q_FLAGGED.split()
     assert "SENDS_TO*1..2" in body["neighbors"] and "SENDS_TO*1..3" in body["illicit"]
+
+
+# --- Self-test fixes (2026-10-08): silence, very short audio, record=false, recording mode -----------------
+def silent_wav(seconds=2.0, sr=16000):
+    buf = io.BytesIO()
+    sf.write(buf, np.zeros(int(seconds * sr), dtype=np.float32), sr, format="WAV")
+    return buf.getvalue()
+
+
+def test_silent_recording_is_refused_not_scored(client):
+    r = client.post("/voice/score", files={"file": ("s.wav", silent_wav(), "audio/wav")})
+    assert r.status_code == 422 and "silent" in r.json()["detail"]
+
+
+def test_empty_and_unreadable_files_get_a_plain_message(client):
+    empty = client.post("/voice/score", files={"file": ("e.wav", b"", "audio/wav")})
+    assert empty.status_code == 422 and "the file is empty" in empty.json()["detail"]
+    junk = client.post("/voice/score", files={"file": ("j.wav", b"not audio at all", "audio/wav")})
+    assert junk.status_code == 422 and "BytesIO" not in junk.json()["detail"]
+
+
+def test_very_short_audio_is_scored_but_flagged_low_confidence(client):
+    short = client.post("/voice/score", files={"file": ("x.wav", wav_bytes(seconds=0.3), "audio/wav")}).json()
+    assert short["low_confidence"] is True and "too little for a reliable result" in short["warnings"][0]
+    normal = client.post("/voice/score", files={"file": ("x.wav", wav_bytes(seconds=3.0), "audio/wav")}).json()
+    assert normal["low_confidence"] is False and normal["warnings"] == []
+
+
+def test_record_false_scores_without_writing_to_the_cases_table(client):
+    assert client.get("/graph/score/7", params={"record": "false"}).status_code == 200
+    assert client.post("/voice/score", data={"clip": "demo.wav"}, params={"record": "false"}).status_code == 200
+    body = client.post("/case/score", data={"node_id": 7, "clip": "demo.wav"}, params={"record": "false"}).json()
+    assert body["case_id"] is None and "combined_score" in body["fusion"]
+    assert client.get("/cases").json()["cases"] == []
+    client.get("/graph/score/7")
+    assert len(client.get("/cases").json()["cases"]) == 1
+
+
+def test_health_reports_recording_mode(client, monkeypatch):
+    assert client.get("/health").json()["recording_mode"] is False
+    monkeypatch.setattr(config, "RECORDING_MODE", True)
+    assert client.get("/health").json()["recording_mode"] is True

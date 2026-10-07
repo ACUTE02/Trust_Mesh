@@ -24,6 +24,8 @@ def main():
     parser.add_argument("--node", type=int, default=154134, help="an illicit test-period node")
     args = parser.parse_args()
     get = lambda p, **kw: requests.get(f"{args.api}{p}", timeout=300, **kw)  # noqa: E731
+    quiet = {"record": "false"}  # this script must not leave test rows in the cases table
+    cases_before = len(get("/cases", params={"limit": 1000}).json()["cases"])
 
     h = get("/health").json()
     print(json.dumps(h, indent=2))
@@ -33,7 +35,7 @@ def main():
     check("neo4j connected with the full graph", h["neo4j"].get("nodes") == 203769 and h["neo4j"].get("edges") == 234355,
           f"({h['neo4j']})")
 
-    s = get(f"/graph/score/{args.node}").json()
+    s = get(f"/graph/score/{args.node}", params=quiet).json()
     check("/graph/score is XGBoost Tier-1+2", s["model"] == "xgboost_tier1_tier2", f"(score {s['score']:.4f} {s['verdict']}, truth {s['ground_truth']})")
     e = get(f"/graph/explain/{args.node}").json()
     check("/graph/explain labels itself secondary", "NOT the source of the risk score" in e.get("label", ""))
@@ -52,19 +54,21 @@ def main():
     clips = get("/voice/clips").json()["clips"]
     check("demo clips available", len(clips) > 0, f"({len(clips)})")
     for clip in clips:
-        v = requests.post(f"{args.api}/voice/score", data={"clip": clip["clip"]}, timeout=300).json()
+        v = requests.post(f"{args.api}/voice/score", data={"clip": clip["clip"]}, params=quiet, timeout=300).json()
         print(f"  {clip['clip']:32s} true={clip.get('true_label', '?'):9s} spoof_prob={v['score']:.4f} "
               f"verdict={v['verdict']} model={v['model']}{' (fallback)' if v['fallback_used'] else ''}")
     if clips:
-        r = requests.post(f"{args.api}/case/score", data={"node_id": args.node, "clip": clips[0]["clip"]}, timeout=300).json()
+        r = requests.post(f"{args.api}/case/score", data={"node_id": args.node, "clip": clips[0]["clip"]}, params=quiet, timeout=300).json()
         f = r["fusion"]
         expected = f["weights"]["graph"] * r["graph"]["score"] + f["weights"]["voice"] * r["voice"]["score"]
         check("/case/score fuses both real scores", abs(f["combined_score"] - expected) < 1e-9,
               f"(graph {r['graph']['score']:.3f} + voice {r['voice']['score']:.3f} -> {f['combined_score']:.3f} {f['combined_verdict']})")
 
     flagged = get("/cases/flagged").json()["cases"]
-    check("flagged cases listed, highest risk first",
-          flagged == sorted(flagged, key=lambda c: -c["risk_score"]) and len(flagged) > 0, f"({len(flagged)} rows)")
+    check("flagged cases, if any, are listed highest risk first",
+          flagged == sorted(flagged, key=lambda c: -c["risk_score"]), f"({len(flagged)} rows)")
+    cases_after = len(get("/cases", params={"limit": 1000}).json()["cases"])
+    check("this script left no rows in the cases table", cases_after == cases_before, f"({cases_before} before, {cases_after} after)")
     sys.exit(1 if failures else 0)
 
 

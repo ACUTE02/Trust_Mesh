@@ -129,7 +129,7 @@ def create_app(graph=None, voice=None, neo4j=None, cases=None, load_on_startup=T
         except KeyError as exc:
             raise HTTPException(422, str(exc.args[0]))
         except (ValueError, RuntimeError) as exc:  # undecodable / too-short audio
-            raise HTTPException(422, f"could not score this audio: {exc}")
+            raise HTTPException(422, f"Could not score this audio: {exc}.")
 
     # -- meta ------------------------------------------------------------------------------------
     @app.get("/health")
@@ -147,6 +147,7 @@ def create_app(graph=None, voice=None, neo4j=None, cases=None, load_on_startup=T
             "voice": {"ready": bool(v and v.ready), **(v.info() if v and v.ready else {"error": getattr(v, "error", None)})},
             "neo4j": neo, "cases": state["cases"].count(),
             "visual": {"connected": False, "note": "Designed, not built. No results yet."},
+            "recording_mode": config.RECORDING_MODE,
             "limits": {"max_upload_mb": config.MAX_UPLOAD_BYTES // (1024 * 1024),
                        "max_audio_seconds": config.MAX_AUDIO_SECONDS,
                        "scoring_requests_per_minute": config.RATE_LIMIT_PER_MINUTE},
@@ -154,10 +155,11 @@ def create_app(graph=None, voice=None, neo4j=None, cases=None, load_on_startup=T
 
     # -- graph -----------------------------------------------------------------------------------
     @app.get("/graph/score/{node_id}")
-    def graph_score(node_id: int):
+    def graph_score(node_id: int, record: bool = Query(True, description="false = do not write a row to the cases table")):
         known_node(node_id)
         result = graph_svc().score(node_id)
-        state["cases"].record_graph(node_id, result["score"], result["verdict"])
+        if record:
+            state["cases"].record_graph(node_id, result["score"], result["verdict"])
         return result
 
     @app.get("/graph/explain/{node_id}")
@@ -204,10 +206,12 @@ def create_app(graph=None, voice=None, neo4j=None, cases=None, load_on_startup=T
 
     @app.post("/voice/score")
     async def voice_score(file: UploadFile | None = File(None), clip: str | None = Form(None),
-                          model: str | None = Query(None, description="'D' (default) or 'C' (fallback)")):
+                          model: str | None = Query(None, description="'D' (default) or 'C' (fallback)"),
+                          record: bool = Query(True, description="false = do not write a row to the cases table")):
         blob, name = await read_audio(file, clip)
         result = score_voice(blob, model)
-        state["cases"].record_voice(name, result["score"], result["verdict"], result["model"])
+        if record:
+            state["cases"].record_voice(name, result["score"], result["verdict"], result["model"])
         return {"clip": name, **result}
 
     # -- fused case ------------------------------------------------------------------------------
@@ -215,7 +219,8 @@ def create_app(graph=None, voice=None, neo4j=None, cases=None, load_on_startup=T
     async def case_score(node_id: int = Form(...), file: UploadFile | None = File(None),
                          clip: str | None = Form(None), model: str | None = Query(None),
                          w_graph: float = Query(config.FUSION_W_GRAPH, ge=0),
-                         w_voice: float = Query(config.FUSION_W_VOICE, ge=0)):
+                         w_voice: float = Query(config.FUSION_W_VOICE, ge=0),
+                         record: bool = Query(True, description="false = do not write a row to the cases table")):
         known_node(node_id)
         blob, name = await read_audio(file, clip)
         graph = graph_svc().score(node_id)
@@ -224,7 +229,7 @@ def create_app(graph=None, voice=None, neo4j=None, cases=None, load_on_startup=T
             fused = fuse(graph["score"], voice["score"], w_graph, w_voice)
         except ValueError as exc:
             raise HTTPException(422, str(exc))
-        case_id = state["cases"].record_combined(node_id, name, graph, voice, voice["model"], fused)
+        case_id = state["cases"].record_combined(node_id, name, graph, voice, voice["model"], fused) if record else None
         # `visual` is the reserved third-signal slot: no Visual Engine is connected, so it is always null.
         return {"case_id": case_id, "graph": graph, "voice": {"clip": name, **voice}, "visual": None,
                 "fusion": fused}

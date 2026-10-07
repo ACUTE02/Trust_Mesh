@@ -14,6 +14,7 @@ export interface Health {
     error?: string | null;
   };
   neo4j: { connected: boolean; nodes?: number; edges?: number };
+  recording_mode?: boolean;
   limits?: { max_upload_mb: number; max_audio_seconds: number; scoring_requests_per_minute: number };
 }
 
@@ -61,10 +62,12 @@ export interface VoiceScore {
   lead_silence_s?: number;
   trail_silence_s?: number;
   scored_seconds?: number;
+  low_confidence?: boolean;
+  warnings?: string[];
 }
 
 export interface CaseScore {
-  case_id: number;
+  case_id: number | null;
   graph: GraphScore;
   voice: VoiceScore;
   visual: null | { score: number };

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { CaseCard, DemoState, ModelInUse, errorText, useHealth } from "../components/caseParts";
+import { CaseCard, DemoState, ModelInUse, RecordingBanner, errorText, isRecording, useHealth } from "../components/caseParts";
 import { ClipInput } from "../components/clip";
 import { EngineerLayer, EngineerToggle, ForEngineers, GRAPH_SCORE_MEANING, Meaning, VOICE_SCORE_MEANING } from "../components/engineers";
 import { Marker, Num, Section } from "../components/evidence";
@@ -127,6 +127,7 @@ export function CaseDesk() {
   const [graph, setGraph] = useState<GraphScore | null>(null);
   const [fused, setFused] = useState<CaseScore | null>(null);
   const [calls, setCalls] = useState<ApiCall[]>([]);
+  const mask = isRecording(health);
 
   async function score() {
     setLoading(true);
@@ -163,9 +164,9 @@ export function CaseDesk() {
           <label className="grid gap-1 text-sm font-semibold">
             Transaction
             <select className="field w-full min-w-0 font-normal" value={nodeId} onChange={(ev) => setNodeId(Number(ev.target.value))}>
-              {examples.transactions.map((t) => (
+              {examples.transactions.map((t, i) => (
                 <option key={t.id} value={t.id}>
-                  {t.label}
+                  {mask ? `Example transaction ${i + 1}` : t.label}
                 </option>
               ))}
             </select>
@@ -190,7 +191,8 @@ export function CaseDesk() {
           {!loading && !error && !graph && (
             <p className="m-0 text-sm text-ink-soft">Nothing scored yet. Pick a transaction, add a recording if you have one, and score the case.</p>
           )}
-          {graph && <CaseCard graph={graph} voice={fused?.voice ?? null} combined={fused?.fusion ?? null} />}
+          {mask && <RecordingBanner />}
+          {graph && <CaseCard graph={graph} voice={fused?.voice ?? null} combined={fused?.fusion ?? null} mask={mask} />}
           {graph && (
             <p className="measure mt-3 mb-0 text-xs text-ink-soft">
               The transaction is from a public dataset. The recording is yours. They were never part of one real case.
@@ -198,7 +200,7 @@ export function CaseDesk() {
           )}
         </div>
       </div>
-      <TechView calls={calls} health={health} />
+      {!mask && <TechView calls={calls} health={health} />}
     </div>
   );
 }
