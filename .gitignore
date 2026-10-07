@@ -1,0 +1,44 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/
+
+# --- Dataset-derived outputs: never in a public repository -------------------------------------
+# The image datasets are non-commercial / no-redistribution (docs/PHASE_3_VISUAL_ENGINE.md, 12a).
+# No dataset image, embedding, per-image table or per-image prediction is committed; weights trained
+# on them stay out until the licenses are checked. scripts/check_no_dataset_outputs.py enforces this.
+artifacts/visual/private/
+artifacts/visual/**/*.npz
+artifacts/visual/**/*.parquet
+**/embeddings/
+*metadata*.parquet
+*predictions*.parquet
+*per_image*
+*celeb*df*/
+*Celeb*DF*/
+*faceforensics*/
+*FaceForensics*/
+
+# --- Graph and Voice engines: weights, per-sample scores, local state (2026-10-08) -----------------
+# Elliptic is CC BY-NC-ND 4.0; whether weights or per-transaction scores may be shared is an open
+# owner decision (docs/design_decisions.md, "Terms findings"). Until then none of them is committed.
+artifacts/**/*.pt
+artifacts/**/*.npz
+artifacts/graph/*xgboost*.json
+artifacts/graph/results.json
+artifacts/graph/results_phase1c_partial.json
+artifacts/voice/phase2c_D_ssl_mean_only_P1_s42/
+artifacts/voice/phase2c_test_scores/
+artifacts/voice/_to_delete/
+_to_delete/
+*.wav
+*.flac
+*.mp3
+*.ogg
+*.sqlite
+.env
+.env.*
+!.env.example
+node_modules/
+frontend/dist/

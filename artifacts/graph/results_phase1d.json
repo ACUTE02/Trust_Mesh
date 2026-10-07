@@ -1,0 +1,628 @@
+{
+  "smoke_test": false,
+  "setup": {
+    "nodes": 203769,
+    "features": 165,
+    "split_counts": [
+      26905,
+      4330,
+      15329
+    ],
+    "pos_weight": 8.107989167230873,
+    "edge_time_stats": {
+      "edges": 234355,
+      "same_step": 234355,
+      "cross_step": 0
+    }
+  },
+  "models": {
+    "xgboost_tier1": {
+      "family": "xgboost",
+      "protocol": "raw features; params from 25-trial Optuna search (Phase 1)",
+      "pr_auc_test": 0.7447529434085257,
+      "pr_auc_val": 0.9929163220494704
+    },
+    "xgboost_tier12": {
+      "family": "xgboost",
+      "protocol": "raw + Tier-2 graph features; params from 25-trial Optuna search (Phase 1B)",
+      "pr_auc_test": 0.7474345053830228,
+      "pr_auc_val": 0.9886736814369471
+    },
+    "graphsage_wide_search": {
+      "family": "graphsage",
+      "protocol": "directed edges; Phase 1C 50-trial search config; early-stopped refit",
+      "pr_auc_test": 0.5770077203418112,
+      "pr_auc_val": 0.8759136364611618,
+      "params": {
+        "hidden_dim": 256,
+        "lr": 0.001031859734651928,
+        "dropout": 0.22808425766001517
+      },
+      "best_epoch": 101
+    },
+    "rgcn_single": {
+      "family": "rgcn",
+      "protocol": "defaults (hidden 64, dropout 0.3, lr 0.01, 40 epochs)",
+      "pr_auc_test": 0.4396761860281696,
+      "pr_auc_val": 0.8809997914663872,
+      "relation_scheme": "single",
+      "relation_counts": {
+        "any": 468710
+      },
+      "relation_info": {},
+      "train_loss_first_last": [
+        1.900131344795227,
+        0.21143990755081177
+      ]
+    },
+    "rgcn_direction": {
+      "family": "rgcn",
+      "protocol": "defaults (hidden 64, dropout 0.3, lr 0.01, 40 epochs)",
+      "pr_auc_test": 0.44903969456450343,
+      "pr_auc_val": 0.8796025380196306,
+      "relation_scheme": "direction",
+      "relation_counts": {
+        "from_upstream": 234355,
+        "from_downstream": 234355
+      },
+      "relation_info": {},
+      "train_loss_first_last": [
+        2.0698492527008057,
+        0.15995997190475464
+      ]
+    },
+    "rgcn_direction_hub": {
+      "family": "rgcn",
+      "protocol": "defaults (hidden 64, dropout 0.3, lr 0.01, 40 epochs)",
+      "pr_auc_test": 0.33934125199285836,
+      "pr_auc_val": 0.8570841494119787,
+      "relation_scheme": "direction_hub",
+      "relation_counts": {
+        "from_upstream": 220642,
+        "from_upstream_hub": 13713,
+        "from_downstream": 182446,
+        "from_downstream_hub": 51909
+      },
+      "relation_info": {
+        "hub_percentile": 99.0,
+        "hub_degree_threshold": 13.0,
+        "hub_nodes": 2210
+      },
+      "train_loss_first_last": [
+        4.656796455383301,
+        0.1626492291688919
+      ]
+    },
+    "care_gnn": {
+      "family": "care_gnn",
+      "protocol": "simplified CARE-GNN (see design_decisions.md); direction relations; early-stopped (patience 15)",
+      "pr_auc_test": 0.4575806961083893,
+      "pr_auc_val": 0.9086793667767269,
+      "params": {
+        "hidden_dim": 64,
+        "dropout": 0.3,
+        "lr": 0.01,
+        "lambda_simi": 2.0,
+        "init_threshold": 0.5,
+        "step_size": 0.02
+      },
+      "diagnostics": {
+        "final_thresholds": [
+          0.23999984562397003,
+          0.4999999701976776
+        ],
+        "converged": [
+          true,
+          true
+        ],
+        "threshold_updates": [
+          30,
+          10
+        ],
+        "last_avg_selected_distance": [
+          0.1950903981924057,
+          0.21434713900089264
+        ],
+        "best_epoch": 16,
+        "epochs_run": 31,
+        "thresholds_at_restored_best_epoch": [
+          0.23999984562397003,
+          0.4999999701976776
+        ],
+        "threshold_history_every_10_epochs": [
+          [
+            0.5,
+            0.5
+          ],
+          [
+            0.33999988436698914,
+            0.4999999701976776
+          ],
+          [
+            0.1399998664855957,
+            0.4999999701976776
+          ],
+          [
+            0.09999987483024597,
+            0.4999999701976776
+          ]
+        ],
+        "train_seconds": 4.1
+      }
+    },
+    "graphsage_expanded_search": {
+      "family": "graphsage",
+      "protocol": "100-trial Optuna search (val-selected, early stopping); early-stopped refit",
+      "pr_auc_test": 0.57941544130811,
+      "pr_auc_val": 0.8918488454030022,
+      "params": {
+        "lr": 0.0002491568254172636,
+        "dropout": 0.10224901341584954,
+        "max_epochs": 289,
+        "hidden_dim": 512
+      },
+      "relation_scheme": null,
+      "best_epoch": 294
+    }
+  },
+  "reproduction": {
+    "split_counts": {
+      "this_run": [
+        26905,
+        4330,
+        15329
+      ],
+      "reference": [
+        26905,
+        4330,
+        15329
+      ],
+      "tolerance": 0,
+      "match": true
+    },
+    "pos_weight": {
+      "this_run": 8.107989167230873,
+      "reference": 8.107989167230873,
+      "tolerance": 1e-09,
+      "match": true
+    },
+    "xgboost_tier1": {
+      "this_run": 0.7447529434085257,
+      "reference": 0.7447529434085257,
+      "tolerance": 0.002,
+      "match": true
+    },
+    "xgboost_tier12": {
+      "this_run": 0.7474345053830228,
+      "reference": 0.7474345053830228,
+      "tolerance": 0.002,
+      "match": true
+    },
+    "graphsage_wide_search": {
+      "this_run": 0.5770077203418112,
+      "reference": 0.5770002559534624,
+      "tolerance": 0.02,
+      "match": true
+    }
+  },
+  "rgcn": {
+    "relation_typing_effect_direction_minus_single": 0.009363508536333831,
+    "hub_split_effect_direction_hub_minus_direction": -0.10969844257164507,
+    "best_rgcn": "rgcn_direction",
+    "best_rgcn_pr_auc_test": 0.44903969456450343,
+    "reference_graphsage_default_directed_same_protocol": 0.5114779015333686,
+    "reference_graphsage_wide_search": 0.5770002559534624,
+    "cross_step_edges": 0
+  },
+  "camouflage_before_after": {
+    "models": {
+      "xgboost_tier12": {
+        "target_fpr": 0.05,
+        "matched_threshold": 0.23327845484018322,
+        "actual_fpr_on_licit_test": 0.05004158580537843,
+        "subsets": {
+          "all_illicit": {
+            "n": 901,
+            "recall_at_0.5": 0.68923419713974,
+            "recall_at_matched_fpr": 0.7092120051383972,
+            "pr_auc_vs_licit": 0.7474345053830228,
+            "pr_auc_chance_baseline": 0.058777480592341315
+          },
+          "mostly_licit_or_unknown/camouflaged": {
+            "n": 714,
+            "recall_at_0.5": 0.7464985847473145,
+            "recall_at_matched_fpr": 0.7633053064346313,
+            "pr_auc_vs_licit": 0.7822062599979015,
+            "pr_auc_chance_baseline": 0.0471536124686303
+          },
+          "mostly_licit_or_unknown/non_camouflaged": {
+            "n": 187,
+            "recall_at_0.5": 0.47058823704719543,
+            "recall_at_matched_fpr": 0.5026738047599792,
+            "pr_auc_vs_licit": 0.45258061433504093,
+            "pr_auc_chance_baseline": 0.012795073554567226
+          },
+          "zero_illicit_neighbors/camouflaged": {
+            "n": 686,
+            "recall_at_0.5": 0.7565597891807556,
+            "recall_at_matched_fpr": 0.7725947499275208,
+            "pr_auc_vs_licit": 0.7887558554693703,
+            "pr_auc_chance_baseline": 0.045388381632923115
+          },
+          "zero_illicit_neighbors/non_camouflaged": {
+            "n": 215,
+            "recall_at_0.5": 0.47441861033439636,
+            "recall_at_matched_fpr": 0.5069767236709595,
+            "pr_auc_vs_licit": 0.4585425890258207,
+            "pr_auc_chance_baseline": 0.014682783582599194
+          }
+        }
+      },
+      "graphsage_wide_search": {
+        "target_fpr": 0.05,
+        "matched_threshold": 0.9254191935062408,
+        "actual_fpr_on_licit_test": 0.05004158580537843,
+        "subsets": {
+          "all_illicit": {
+            "n": 901,
+            "recall_at_0.5": 0.8534961342811584,
+            "recall_at_matched_fpr": 0.5926747918128967,
+            "pr_auc_vs_licit": 0.5770077203418112,
+            "pr_auc_chance_baseline": 0.058777480592341315
+          },
+          "mostly_licit_or_unknown/camouflaged": {
+            "n": 714,
+            "recall_at_0.5": 0.8683473467826843,
+            "recall_at_matched_fpr": 0.6316526532173157,
+            "pr_auc_vs_licit": 0.577084479363584,
+            "pr_auc_chance_baseline": 0.0471536124686303
+          },
+          "mostly_licit_or_unknown/non_camouflaged": {
+            "n": 187,
+            "recall_at_0.5": 0.7967914342880249,
+            "recall_at_matched_fpr": 0.4438502788543701,
+            "pr_auc_vs_licit": 0.29514649710737295,
+            "pr_auc_chance_baseline": 0.012795073554567226
+          },
+          "zero_illicit_neighbors/camouflaged": {
+            "n": 686,
+            "recall_at_0.5": 0.8775510191917419,
+            "recall_at_matched_fpr": 0.6428571343421936,
+            "pr_auc_vs_licit": 0.5829662474592711,
+            "pr_auc_chance_baseline": 0.045388381632923115
+          },
+          "zero_illicit_neighbors/non_camouflaged": {
+            "n": 215,
+            "recall_at_0.5": 0.7767441868782043,
+            "recall_at_matched_fpr": 0.43255814909935,
+            "pr_auc_vs_licit": 0.2913512905331384,
+            "pr_auc_chance_baseline": 0.014682783582599194
+          }
+        }
+      },
+      "rgcn_direction": {
+        "target_fpr": 0.05,
+        "matched_threshold": 0.9697568506002425,
+        "actual_fpr_on_licit_test": 0.05004158580537843,
+        "subsets": {
+          "all_illicit": {
+            "n": 901,
+            "recall_at_0.5": 0.7358490824699402,
+            "recall_at_matched_fpr": 0.5349611639976501,
+            "pr_auc_vs_licit": 0.44903969456450343,
+            "pr_auc_chance_baseline": 0.058777480592341315
+          },
+          "mostly_licit_or_unknown/camouflaged": {
+            "n": 714,
+            "recall_at_0.5": 0.7591036558151245,
+            "recall_at_matched_fpr": 0.5532212853431702,
+            "pr_auc_vs_licit": 0.4199887240162192,
+            "pr_auc_chance_baseline": 0.0471536124686303
+          },
+          "mostly_licit_or_unknown/non_camouflaged": {
+            "n": 187,
+            "recall_at_0.5": 0.6470588445663452,
+            "recall_at_matched_fpr": 0.46524062752723694,
+            "pr_auc_vs_licit": 0.2021897685399376,
+            "pr_auc_chance_baseline": 0.012795073554567226
+          },
+          "zero_illicit_neighbors/camouflaged": {
+            "n": 686,
+            "recall_at_0.5": 0.7653061151504517,
+            "recall_at_matched_fpr": 0.5612244606018066,
+            "pr_auc_vs_licit": 0.4213367591603744,
+            "pr_auc_chance_baseline": 0.045388381632923115
+          },
+          "zero_illicit_neighbors/non_camouflaged": {
+            "n": 215,
+            "recall_at_0.5": 0.6418604850769043,
+            "recall_at_matched_fpr": 0.45116278529167175,
+            "pr_auc_vs_licit": 0.19860548859469154,
+            "pr_auc_chance_baseline": 0.014682783582599194
+          }
+        }
+      },
+      "care_gnn": {
+        "target_fpr": 0.05,
+        "matched_threshold": 0.9256148904561995,
+        "actual_fpr_on_licit_test": 0.05004158580537843,
+        "subsets": {
+          "all_illicit": {
+            "n": 901,
+            "recall_at_0.5": 0.7980022430419922,
+            "recall_at_matched_fpr": 0.573806881904602,
+            "pr_auc_vs_licit": 0.4575806961083893,
+            "pr_auc_chance_baseline": 0.058777480592341315
+          },
+          "mostly_licit_or_unknown/camouflaged": {
+            "n": 714,
+            "recall_at_0.5": 0.8067227005958557,
+            "recall_at_matched_fpr": 0.6106442809104919,
+            "pr_auc_vs_licit": 0.43489788345757907,
+            "pr_auc_chance_baseline": 0.0471536124686303
+          },
+          "mostly_licit_or_unknown/non_camouflaged": {
+            "n": 187,
+            "recall_at_0.5": 0.7647058963775635,
+            "recall_at_matched_fpr": 0.4331550896167755,
+            "pr_auc_vs_licit": 0.19840072980880727,
+            "pr_auc_chance_baseline": 0.012795073554567226
+          },
+          "zero_illicit_neighbors/camouflaged": {
+            "n": 686,
+            "recall_at_0.5": 0.8075801730155945,
+            "recall_at_matched_fpr": 0.6209912300109863,
+            "pr_auc_vs_licit": 0.43558551826373887,
+            "pr_auc_chance_baseline": 0.045388381632923115
+          },
+          "zero_illicit_neighbors/non_camouflaged": {
+            "n": 215,
+            "recall_at_0.5": 0.7674418687820435,
+            "recall_at_matched_fpr": 0.4232558012008667,
+            "pr_auc_vs_licit": 0.1967802621841345,
+            "pr_auc_chance_baseline": 0.014682783582599194
+          }
+        }
+      },
+      "graphsage_expanded_search": {
+        "target_fpr": 0.05,
+        "matched_threshold": 0.8987269908189773,
+        "actual_fpr_on_licit_test": 0.05004158580537843,
+        "subsets": {
+          "all_illicit": {
+            "n": 901,
+            "recall_at_0.5": 0.8046615123748779,
+            "recall_at_matched_fpr": 0.5993340611457825,
+            "pr_auc_vs_licit": 0.57941544130811,
+            "pr_auc_chance_baseline": 0.058777480592341315
+          },
+          "mostly_licit_or_unknown/camouflaged": {
+            "n": 714,
+            "recall_at_0.5": 0.8179271817207336,
+            "recall_at_matched_fpr": 0.6414566040039062,
+            "pr_auc_vs_licit": 0.5808131773391254,
+            "pr_auc_chance_baseline": 0.0471536124686303
+          },
+          "mostly_licit_or_unknown/non_camouflaged": {
+            "n": 187,
+            "recall_at_0.5": 0.7540106773376465,
+            "recall_at_matched_fpr": 0.4385026693344116,
+            "pr_auc_vs_licit": 0.2776598686282195,
+            "pr_auc_chance_baseline": 0.012795073554567226
+          },
+          "zero_illicit_neighbors/camouflaged": {
+            "n": 686,
+            "recall_at_0.5": 0.8309037685394287,
+            "recall_at_matched_fpr": 0.6516035199165344,
+            "pr_auc_vs_licit": 0.5874772806056974,
+            "pr_auc_chance_baseline": 0.045388381632923115
+          },
+          "zero_illicit_neighbors/non_camouflaged": {
+            "n": 215,
+            "recall_at_0.5": 0.7209302186965942,
+            "recall_at_matched_fpr": 0.43255814909935,
+            "pr_auc_vs_licit": 0.2739586009727811,
+            "pr_auc_chance_baseline": 0.014682783582599194
+          }
+        }
+      }
+    },
+    "comparisons": {
+      "all_illicit": {
+        "care_minus_graphsage": {
+          "delta": -0.018867909908294678,
+          "approx_se": 0.023224138939103228,
+          "beyond_2se": false
+        },
+        "care_minus_xgboost_tier12": {
+          "delta": -0.13540512323379517,
+          "approx_se": 0.022367699109952132,
+          "beyond_2se": true
+        },
+        "graphsage_minus_xgboost_tier12": {
+          "delta": -0.11653721332550049,
+          "approx_se": 0.022289631177109036,
+          "beyond_2se": true
+        }
+      },
+      "zero_illicit_neighbors/camouflaged": {
+        "care_minus_graphsage": {
+          "delta": -0.021865904331207275,
+          "approx_se": 0.026034092960014524,
+          "beyond_2se": false
+        },
+        "care_minus_xgboost_tier12": {
+          "delta": -0.15160351991653442,
+          "approx_se": 0.024478622331979644,
+          "beyond_2se": true
+        },
+        "graphsage_minus_xgboost_tier12": {
+          "delta": -0.12973761558532715,
+          "approx_se": 0.024306232073453598,
+          "beyond_2se": true
+        }
+      },
+      "mostly_licit_or_unknown/camouflaged": {
+        "care_minus_graphsage": {
+          "delta": -0.02100837230682373,
+          "approx_se": 0.02566825148812207,
+          "beyond_2se": false
+        },
+        "care_minus_xgboost_tier12": {
+          "delta": -0.1526610255241394,
+          "approx_se": 0.024208135734118803,
+          "beyond_2se": true
+        },
+        "graphsage_minus_xgboost_tier12": {
+          "delta": -0.13165265321731567,
+          "approx_se": 0.024060436699103138,
+          "beyond_2se": true
+        }
+      }
+    },
+    "selector_keep_rates": {
+      "illicit_test_targets": {
+        "licit_neighbors": {
+          "edges": 425,
+          "kept_share": 0.7411764860153198
+        },
+        "illicit_neighbors": {
+          "edges": 282,
+          "kept_share": 0.76241135597229
+        },
+        "unknown_neighbors": {
+          "edges": 1115,
+          "kept_share": 0.676233172416687
+        }
+      },
+      "licit_test_targets": {
+        "licit_neighbors": {
+          "edges": 24316,
+          "kept_share": 0.725859522819519
+        },
+        "illicit_neighbors": {
+          "edges": 425,
+          "kept_share": 0.29411765933036804
+        },
+        "unknown_neighbors": {
+          "edges": 23130,
+          "kept_share": 0.3916558623313904
+        }
+      }
+    },
+    "finding": "On the camouflaged subset (illicit test nodes with no illicit-labeled neighbors, n=686), recall at a matched 5% FPR: CARE-GNN 0.6210, GraphSAGE (wide search) 0.6429, XGBoost Tier-1+2 0.7726. CARE-GNN vs GraphSAGE: -0.0219 (SE ~0.0260) -> no clear difference (within ~2 SE); CARE-GNN vs XGBoost Tier-1+2: -0.1516 (SE ~0.0245) -> lower.",
+    "note": "Phase 1C reported recall at p>0.5 within one model; across models, recall is compared at a matched false-positive rate on licit test nodes because the models are calibrated differently."
+  },
+  "expanded_search": {
+    "base_model": "graphsage_wide_search",
+    "family": "graphsage",
+    "relation_scheme": null,
+    "trials_requested": 100,
+    "trials_completed": 100,
+    "trials_total": 100,
+    "timeout_sec": 14400,
+    "seconds": 3216.7,
+    "best_params": {
+      "lr": 0.0002491568254172636,
+      "dropout": 0.10224901341584954,
+      "max_epochs": 289,
+      "hidden_dim": 512
+    },
+    "best_val_pr_auc": 0.8914018155734487,
+    "at_boundary": [
+      "dropout=0.1022 (near lower bound)",
+      "max_epochs=289 (near upper bound)",
+      "hidden_dim=512 (max option)"
+    ],
+    "pr_auc_test": 0.57941544130811,
+    "change_vs_base": 0.00240772096629871,
+    "search_space": {
+      "lr": [
+        0.0001,
+        0.03
+      ],
+      "dropout": [
+        0.1,
+        0.6
+      ],
+      "max_epochs": [
+        30,
+        300
+      ],
+      "hidden_dim": [
+        128,
+        256,
+        512
+      ]
+    }
+  },
+  "robustness_best_gnn": {
+    "model": "graphsage_expanded_search",
+    "family": "graphsage",
+    "params": {
+      "lr": 0.0002491568254172636,
+      "dropout": 0.10224901341584954,
+      "max_epochs": 289,
+      "hidden_dim": 512
+    },
+    "relation_scheme": null,
+    "max_epochs": 300,
+    "early_stopping": true,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "scores": [
+      0.5794078560208007,
+      0.5961639774968781,
+      0.5984306665984901
+    ],
+    "mean": 0.5913341667053896,
+    "std": 0.008483793757506006
+  },
+  "camouflage_final_best_gnn": {
+    "target_fpr": 0.05,
+    "matched_threshold": 0.8987269908189773,
+    "actual_fpr_on_licit_test": 0.05004158580537843,
+    "subsets": {
+      "all_illicit": {
+        "n": 901,
+        "recall_at_0.5": 0.8046615123748779,
+        "recall_at_matched_fpr": 0.5993340611457825,
+        "pr_auc_vs_licit": 0.57941544130811,
+        "pr_auc_chance_baseline": 0.058777480592341315
+      },
+      "mostly_licit_or_unknown/camouflaged": {
+        "n": 714,
+        "recall_at_0.5": 0.8179271817207336,
+        "recall_at_matched_fpr": 0.6414566040039062,
+        "pr_auc_vs_licit": 0.5808131773391254,
+        "pr_auc_chance_baseline": 0.0471536124686303
+      },
+      "mostly_licit_or_unknown/non_camouflaged": {
+        "n": 187,
+        "recall_at_0.5": 0.7540106773376465,
+        "recall_at_matched_fpr": 0.4385026693344116,
+        "pr_auc_vs_licit": 0.2776598686282195,
+        "pr_auc_chance_baseline": 0.012795073554567226
+      },
+      "zero_illicit_neighbors/camouflaged": {
+        "n": 686,
+        "recall_at_0.5": 0.8309037685394287,
+        "recall_at_matched_fpr": 0.6516035199165344,
+        "pr_auc_vs_licit": 0.5874772806056974,
+        "pr_auc_chance_baseline": 0.045388381632923115
+      },
+      "zero_illicit_neighbors/non_camouflaged": {
+        "n": 215,
+        "recall_at_0.5": 0.7209302186965942,
+        "recall_at_matched_fpr": 0.43255814909935,
+        "pr_auc_vs_licit": 0.2739586009727811,
+        "pr_auc_chance_baseline": 0.014682783582599194
+      }
+    }
+  },
+  "closing_paragraph": "Overall: the best GNN after Phase 1D is graphsage_expanded_search, at 0.5913 +/- 0.0085 test PR-AUC over 3 seeds, vs XGBoost on raw + classical graph features at 0.7474 in this run (0.7482 +/- 0.0030 over 3 seeds in notebook 01), a gap of -0.1561. The standing finding holds: message-passing GNNs still trail tuned XGBoost on this dataset. Targeted defense: CARE-GNN's neighbor selection did not measurably change camouflaged-subset recall vs the pre-1D best GNN (-0.0219, SE ~0.0260), and on that subset it still trails XGBoost (-0.1516), at a matched 5% false-positive rate. Relation typing: RGCN with payment-direction relations vs the same edges untyped: +0.0094 test PR-AUC; best RGCN rgcn_direction at 0.4490.",
+  "standing_finding_changed": false
+}

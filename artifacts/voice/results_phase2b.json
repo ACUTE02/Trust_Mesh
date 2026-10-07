@@ -1,0 +1,1529 @@
+{
+  "smoke_test": false,
+  "not_run": {},
+  "data": {
+    "dataset": "SpeechAntiSpoofingBenchmarks/ASVspoof2019_LA (split 'test' = LA evaluation partition)",
+    "schema": {
+      "columns": [
+        "path",
+        "audio",
+        "label",
+        "notes"
+      ],
+      "note_keys": [
+        "speaker_id",
+        "subset",
+        "utterance_id"
+      ],
+      "attack_id_in_dataset": false
+    },
+    "protocol_source": "/root/.cache/huggingface/hub/datasets--SpeechAntiSpoofingBenchmarks--ASVspoof2019_LA/snapshots/e904f130e44a900cb7e444405d6b9edff30a5d19/protocols/ASVspoof2019.LA.cm.eval.trl.txt",
+    "protocol_verification": {
+      "clips": 71237,
+      "found_in_protocol": 71237,
+      "label_agreement": 71237.0,
+      "speaker_agreement": 71237,
+      "bonafide_rows_have_no_attack": true,
+      "usable": true
+    },
+    "attacks_available": true,
+    "partition_counts": {
+      "clips": 71237,
+      "bonafide": 7355,
+      "spoof": 63882
+    },
+    "spoof_per_bonafide_requested": 4,
+    "loaded": {
+      "clips": 36775,
+      "bonafide": 7355,
+      "spoof": 29420,
+      "speakers": 67
+    },
+    "attack_counts_loaded": {
+      "A07": 2256,
+      "A08": 2274,
+      "A09": 2288,
+      "A10": 2327,
+      "A11": 2239,
+      "A12": 2288,
+      "A13": 2281,
+      "A14": 2163,
+      "A15": 2246,
+      "A16": 2249,
+      "A17": 2265,
+      "A18": 2272,
+      "A19": 2272,
+      "bonafide": 7355
+    },
+    "phase2_loaded_for_comparison": {
+      "clips": 6000,
+      "bonafide": 619,
+      "spoof": 5381
+    }
+  },
+  "silence_stats": {
+    "by_class": {
+      "lead_silence_s": {
+        "bonafide_mean": 1.0709367777022434,
+        "spoof_mean": 0.295480625424881
+      },
+      "trail_silence_s": {
+        "bonafide_mean": 0.5254993711760707,
+        "spoof_mean": 0.2906589225016995
+      },
+      "speech_s": {
+        "bonafide_mean": 1.7986526172671653,
+        "spoof_mean": 2.4943976886471786
+      },
+      "silence_ratio": {
+        "bonafide_mean": 0.47110151647437004,
+        "spoof_mean": 0.19241890816053892
+      }
+    },
+    "timing_probe_before_trim": {
+      "total_s": {
+        "eer": 0.4221844550192613,
+        "direction": "higher_is_bonafide",
+        "point_biserial_r": 0.08698258440178981,
+        "mean_bonafide": 3.395088766145479,
+        "mean_spoof": 3.0805372365737593
+      },
+      "lead_silence_s": {
+        "eer": 0.1815896189438187,
+        "direction": "higher_is_bonafide",
+        "point_biserial_r": 0.5210118582622445,
+        "mean_bonafide": 1.0709367777022434,
+        "mean_spoof": 0.295480625424881
+      },
+      "trail_silence_s": {
+        "eer": 0.3671651937457512,
+        "direction": "higher_is_bonafide",
+        "point_biserial_r": 0.27036063411565403,
+        "mean_bonafide": 0.5254993711760707,
+        "mean_spoof": 0.2906589225016995
+      },
+      "speech_s": {
+        "eer": 0.4056469188627185,
+        "direction": "lower_is_bonafide",
+        "point_biserial_r": -0.2030170343108019,
+        "mean_bonafide": 1.7986526172671653,
+        "mean_spoof": 2.4943976886471786
+      },
+      "silence_ratio": {
+        "eer": 0.1865397688647179,
+        "direction": "higher_is_bonafide",
+        "point_biserial_r": 0.5592134303513372,
+        "mean_bonafide": 0.47110151647437004,
+        "mean_spoof": 0.19241890816053892
+      }
+    },
+    "timing_probe_verdict": {
+      "level": "strong",
+      "worst_measure": "lead_silence_s",
+      "worst_eer": 0.1815896189438187,
+      "text": "Timing alone separates the classes well (lead_silence_s EER 0.1816), so this data carries the known ASVspoof silence-duration shortcut."
+    },
+    "clips_with_silence_window": 27430
+  },
+  "splits": {
+    "P1": {
+      "train": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198,
+        "attacks": [
+          "A07",
+          "A08",
+          "A09",
+          "A10",
+          "A11",
+          "A12",
+          "A13",
+          "A14",
+          "A15",
+          "A16",
+          "A17",
+          "A18",
+          "A19"
+        ]
+      },
+      "val": {
+        "bonafide": 1091,
+        "spoof": 4329,
+        "total": 5420,
+        "attacks": [
+          "A07",
+          "A08",
+          "A09",
+          "A10",
+          "A11",
+          "A12",
+          "A13",
+          "A14",
+          "A15",
+          "A16",
+          "A17",
+          "A18",
+          "A19"
+        ]
+      },
+      "test": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157,
+        "attacks": [
+          "A07",
+          "A08",
+          "A09",
+          "A10",
+          "A11",
+          "A12",
+          "A13",
+          "A14",
+          "A15",
+          "A16",
+          "A17",
+          "A18",
+          "A19"
+        ]
+      },
+      "shared_speakers_train_test": 0,
+      "attack_overlap_train_test": [
+        "A07",
+        "A08",
+        "A09",
+        "A10",
+        "A11",
+        "A12",
+        "A13",
+        "A14",
+        "A15",
+        "A16",
+        "A17",
+        "A18",
+        "A19"
+      ]
+    },
+    "P2": {
+      "train": {
+        "bonafide": 4099,
+        "spoof": 11208,
+        "total": 15307,
+        "attacks": [
+          "A08",
+          "A09",
+          "A10",
+          "A11",
+          "A13",
+          "A16",
+          "A17",
+          "A18",
+          "A19"
+        ]
+      },
+      "val": {
+        "bonafide": 1091,
+        "spoof": 3023,
+        "total": 4114,
+        "attacks": [
+          "A08",
+          "A09",
+          "A10",
+          "A11",
+          "A13",
+          "A16",
+          "A17",
+          "A18",
+          "A19"
+        ]
+      },
+      "test": {
+        "bonafide": 2165,
+        "spoof": 2756,
+        "total": 4921,
+        "attacks": [
+          "A07",
+          "A12",
+          "A14",
+          "A15"
+        ]
+      },
+      "shared_speakers_train_test": 0,
+      "attack_overlap_train_test": []
+    },
+    "held_out_attacks": [
+      "A07",
+      "A12",
+      "A14",
+      "A15"
+    ],
+    "held_out_draws_needed": 1
+  },
+  "models": {
+    "A_lcnn_trimmed_P1_s42": {
+      "group": "A_lcnn_trimmed",
+      "kind": "lcnn",
+      "features": "trimmed",
+      "split": "P1",
+      "seed": 42,
+      "augment": false,
+      "role": "headline",
+      "test_eer": 0.15150115473441106,
+      "test_ci": [
+        0.14279188377865262,
+        0.15889145496535795
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      },
+      "best_val_eer": 0.14576114576114577,
+      "best_epoch": 14,
+      "epochs_run": 19,
+      "validation_usable": true,
+      "train_seconds": 447.9
+    },
+    "A_lcnn_trimmed_P1_s43": {
+      "group": "A_lcnn_trimmed",
+      "kind": "lcnn",
+      "features": "trimmed",
+      "split": "P1",
+      "seed": 43,
+      "augment": false,
+      "role": "headline",
+      "test_eer": 0.12655889145496535,
+      "test_ci": [
+        0.11916859122401846,
+        0.1330254041570439
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      },
+      "best_val_eer": 0.12705012705012705,
+      "best_epoch": 14,
+      "epochs_run": 19,
+      "validation_usable": true,
+      "train_seconds": 445.9
+    },
+    "A_lcnn_trimmed_P1_s44": {
+      "group": "A_lcnn_trimmed",
+      "kind": "lcnn",
+      "features": "trimmed",
+      "split": "P1",
+      "seed": 44,
+      "augment": false,
+      "role": "headline",
+      "test_eer": 0.16027713625866047,
+      "test_ci": [
+        0.1505746100716675,
+        0.16720554272517318
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      },
+      "best_val_eer": 0.13236313236313235,
+      "best_epoch": 25,
+      "epochs_run": 25,
+      "validation_usable": true,
+      "train_seconds": 579.5
+    },
+    "B_lcnn_trimmed_aug_P1_s42": {
+      "group": "B_lcnn_trimmed_aug",
+      "kind": "lcnn",
+      "features": "trimmed",
+      "split": "P1",
+      "seed": 42,
+      "augment": true,
+      "role": "augmentation",
+      "test_eer": 0.09830960854092527,
+      "test_ci": [
+        0.09237875288683606,
+        0.10484988452655886
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      },
+      "best_val_eer": 0.09032109032109033,
+      "best_epoch": 23,
+      "epochs_run": 25,
+      "validation_usable": true,
+      "train_seconds": 591.1
+    },
+    "C_ssl_P1_s42": {
+      "group": "C_ssl_frozen",
+      "kind": "ssl",
+      "features": "ssl",
+      "split": "P1",
+      "seed": 42,
+      "augment": false,
+      "role": "frozen SSL front-end",
+      "test_eer": 0.01834964412811388,
+      "test_ci": [
+        0.015789629272722792,
+        0.021241103202846976
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      },
+      "best_val_eer": 0.006699006699006699,
+      "best_epoch": 15,
+      "epochs_run": 23,
+      "validation_usable": true,
+      "train_seconds": 133.7,
+      "layer_weights": [
+        0.026203224435448647,
+        0.02974526397883892,
+        0.03373505920171738,
+        0.02902153879404068,
+        0.03043098747730255,
+        0.0929708331823349,
+        0.16343261301517487,
+        0.06513310223817825,
+        0.08542928844690323,
+        0.04358730837702751,
+        0.0483173206448555,
+        0.03676065430045128,
+        0.02715047262609005,
+        0.019559567794203758,
+        0.02192193642258644,
+        0.021252362057566643,
+        0.023355577141046524,
+        0.030584901571273804,
+        0.033008426427841187,
+        0.04010704904794693,
+        0.03031099960207939,
+        0.021384090185165405,
+        0.014676445163786411,
+        0.010758478194475174,
+        0.0211624912917614
+      ]
+    },
+    "C_ssl_P1_s43": {
+      "group": "C_ssl_frozen",
+      "kind": "ssl",
+      "features": "ssl",
+      "split": "P1",
+      "seed": 43,
+      "augment": false,
+      "role": "frozen SSL front-end",
+      "test_eer": 0.015242494226327952,
+      "test_ci": [
+        0.013011565836298932,
+        0.018241214412811384
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      },
+      "best_val_eer": 0.006416131989000928,
+      "best_epoch": 36,
+      "epochs_run": 44,
+      "validation_usable": true,
+      "train_seconds": 251.1,
+      "layer_weights": [
+        0.02488933876156807,
+        0.030204618349671364,
+        0.03432156518101692,
+        0.028641169890761375,
+        0.025360386818647385,
+        0.12027648091316223,
+        0.2447904646396637,
+        0.05879316106438637,
+        0.0769231989979744,
+        0.035561393946409225,
+        0.03815043345093727,
+        0.0290563702583313,
+        0.01952429674565792,
+        0.013348603621125221,
+        0.01317659579217434,
+        0.016556864604353905,
+        0.017390023916959763,
+        0.025269532576203346,
+        0.028142688795924187,
+        0.037472743541002274,
+        0.028454214334487915,
+        0.014616049826145172,
+        0.010550856590270996,
+        0.006835821084678173,
+        0.021693086251616478
+      ]
+    },
+    "C_ssl_P1_s44": {
+      "group": "C_ssl_frozen",
+      "kind": "ssl",
+      "features": "ssl",
+      "split": "P1",
+      "seed": 44,
+      "augment": false,
+      "role": "frozen SSL front-end",
+      "test_eer": 0.018794483985765123,
+      "test_ci": [
+        0.016234895478043607,
+        0.021709006928406493
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      },
+      "best_val_eer": 0.007332722273143855,
+      "best_epoch": 20,
+      "epochs_run": 28,
+      "validation_usable": true,
+      "train_seconds": 162.0,
+      "layer_weights": [
+        0.027857545763254166,
+        0.026366835460066795,
+        0.032298743724823,
+        0.026467934250831604,
+        0.028056122362613678,
+        0.1055997684597969,
+        0.18252982199192047,
+        0.06445303559303284,
+        0.08500530570745468,
+        0.04314517602324486,
+        0.045501481741666794,
+        0.034611038863658905,
+        0.02358744665980339,
+        0.016096744686365128,
+        0.01829809695482254,
+        0.018455294892191887,
+        0.017053481191396713,
+        0.02869449555873871,
+        0.03384355455636978,
+        0.044389206916093826,
+        0.03263452649116516,
+        0.020287510007619858,
+        0.013755586929619312,
+        0.00933566689491272,
+        0.021675609052181244
+      ]
+    },
+    "U_lcnn_untrimmed_P1_s42": {
+      "group": "U_lcnn_untrimmed_SHORTCUT",
+      "kind": "lcnn",
+      "features": "untrimmed",
+      "split": "P1",
+      "seed": 42,
+      "augment": false,
+      "role": "shortcut comparison -- NOT a result",
+      "test_eer": 0.004670818505338078,
+      "test_ci": [
+        0.003444728647686833,
+        0.006466512702078542
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      },
+      "best_val_eer": 0.004582951420714965,
+      "best_epoch": 5,
+      "epochs_run": 10,
+      "validation_usable": true,
+      "train_seconds": 217.7
+    },
+    "A_lcnn_trimmed_P2_s42": {
+      "group": "A_lcnn_trimmed_P2",
+      "kind": "lcnn",
+      "features": "trimmed",
+      "split": "P2",
+      "seed": 42,
+      "augment": false,
+      "role": "attack-disjoint",
+      "test_eer": 0.4056603773584906,
+      "test_ci": [
+        0.3911375181422351,
+        0.41799709724238027
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 2756,
+        "total": 4921
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 11208,
+        "total": 15307
+      },
+      "best_val_eer": 0.07791017415215395,
+      "best_epoch": 18,
+      "epochs_run": 23,
+      "validation_usable": true,
+      "train_seconds": 401.9
+    },
+    "B_lcnn_trimmed_aug_P2_s42": {
+      "group": "B_lcnn_trimmed_aug_P2",
+      "kind": "lcnn",
+      "features": "trimmed",
+      "split": "P2",
+      "seed": 42,
+      "augment": true,
+      "role": "attack-disjoint",
+      "test_eer": 0.233256351039261,
+      "test_ci": [
+        0.2209677436925356,
+        0.244806607125499
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 2756,
+        "total": 4921
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 11208,
+        "total": 15307
+      },
+      "best_val_eer": 0.060535891498511414,
+      "best_epoch": 25,
+      "epochs_run": 25,
+      "validation_usable": true,
+      "train_seconds": 444.8
+    },
+    "C_ssl_frozen_P2_s42": {
+      "group": "C_ssl_frozen_P2",
+      "kind": "ssl",
+      "features": "ssl",
+      "split": "P2",
+      "seed": 42,
+      "augment": false,
+      "role": "attack-disjoint",
+      "test_eer": 0.010159651669085631,
+      "test_ci": [
+        0.007619738751814224,
+        0.014150943396226415
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 2756,
+        "total": 4921
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 11208,
+        "total": 15307
+      },
+      "best_val_eer": 0.010916308303010255,
+      "best_epoch": 19,
+      "epochs_run": 27,
+      "validation_usable": true,
+      "train_seconds": 118.4,
+      "layer_weights": [
+        0.02826259657740593,
+        0.028468796983361244,
+        0.037210896611213684,
+        0.029276402667164803,
+        0.02884412743151188,
+        0.11064906418323517,
+        0.16467750072479248,
+        0.06426338106393814,
+        0.07603245228528976,
+        0.04669061303138733,
+        0.04677262157201767,
+        0.03581036627292633,
+        0.0249728225171566,
+        0.015478073619306087,
+        0.02160748280584812,
+        0.02177458629012108,
+        0.01922832615673542,
+        0.02894858829677105,
+        0.03291795402765274,
+        0.043812621384859085,
+        0.03104366548359394,
+        0.017631031572818756,
+        0.014422211796045303,
+        0.010051419027149677,
+        0.021152406930923462
+      ]
+    },
+    "S_zeros_fixed_P1_s42": {
+      "group": "S_zeros_fixed",
+      "kind": "lcnn",
+      "features": "zeros_fixed",
+      "split": "P1",
+      "seed": 42,
+      "augment": false,
+      "role": "silence ablation",
+      "test_eer": 0.1330254041570439,
+      "test_ci": [
+        0.12655889145496535,
+        0.14146741548042702
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      },
+      "best_val_eer": 0.12007332722273145,
+      "best_epoch": 15,
+      "epochs_run": 20,
+      "validation_usable": true,
+      "train_seconds": 427.0
+    },
+    "S_noise_fixed_P1_s42": {
+      "group": "S_noise_fixed",
+      "kind": "lcnn",
+      "features": "noise_fixed",
+      "split": "P1",
+      "seed": 42,
+      "augment": false,
+      "role": "silence ablation",
+      "test_eer": 0.13979092526690393,
+      "test_ci": [
+        0.13233390162566883,
+        0.14872979214780602
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      },
+      "best_val_eer": 0.1319011319011319,
+      "best_epoch": 14,
+      "epochs_run": 19,
+      "validation_usable": true,
+      "train_seconds": 407.8
+    },
+    "S_zeros_original_duration_P1_s42": {
+      "group": "S_zeros_original_duration",
+      "kind": "lcnn",
+      "features": "zeros_original_duration",
+      "split": "P1",
+      "seed": 42,
+      "augment": false,
+      "role": "silence ablation",
+      "test_eer": 0.02771362586605086,
+      "test_ci": [
+        0.023094688221709014,
+        0.0322508896797153
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      },
+      "best_val_eer": 0.010082493125572856,
+      "best_epoch": 16,
+      "epochs_run": 21,
+      "validation_usable": true,
+      "train_seconds": 450.5
+    },
+    "S_silence_only_P1_s42": {
+      "group": "S_silence_only",
+      "kind": "lcnn",
+      "features": "silence_only",
+      "split": "P1",
+      "seed": 42,
+      "augment": false,
+      "role": "silence ablation",
+      "test_eer": 0.04396112910689498,
+      "test_ci": [
+        0.03945980877992178,
+        0.048358402070192465
+      ],
+      "test_counts": {
+        "bonafide": 2161,
+        "spoof": 6183,
+        "total": 8344
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 10910,
+        "total": 15009
+      },
+      "best_val_eer": 0.0381653833277536,
+      "best_epoch": 11,
+      "epochs_run": 16,
+      "validation_usable": true,
+      "train_seconds": 28.6
+    }
+  },
+  "ssl": {
+    "model": "facebook/wav2vec2-xls-r-300m",
+    "n_layers": 25,
+    "feature_dim": 2048,
+    "pooling": "per-layer mean + std over frames",
+    "frozen": true,
+    "extract_seconds": 716.8
+  },
+  "model_selection": {
+    "validation_eer_first_seed": {
+      "A_lcnn_trimmed": 0.14576114576114577,
+      "B_lcnn_trimmed_aug": 0.09032109032109033,
+      "C_ssl_frozen": 0.006699006699006699
+    },
+    "best_group": "C_ssl_frozen",
+    "rule": "lowest validation EER (P1 val split), first seed of each family"
+  },
+  "attack_disjoint": {
+    "A_lcnn_trimmed": {
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 2756,
+        "total": 4921
+      },
+      "held_out_attacks": [
+        "A07",
+        "A12",
+        "A14",
+        "A15"
+      ],
+      "eer_attacks_seen_in_training": 0.16951501154734416,
+      "eer_attacks_unseen": 0.4056603773584906,
+      "unseen_minus_seen": {
+        "difference": 0.23614536581114642,
+        "ci_low": 0.21997810362107284,
+        "ci_high": 0.252177068214804,
+        "excludes_zero": true,
+        "paired": true,
+        "n_resamples": 1000
+      },
+      "per_attack_seen": {
+        "A07": {
+          "eer": 0.06876790830945559,
+          "n_spoof": 698
+        },
+        "A12": {
+          "eer": 0.2706697459584295,
+          "n_spoof": 685
+        },
+        "A14": {
+          "eer": 0.1661721068249258,
+          "n_spoof": 674
+        },
+        "A15": {
+          "eer": 0.12840646651270204,
+          "n_spoof": 699
+        }
+      },
+      "per_attack_unseen": {
+        "A07": {
+          "eer": 0.028175519630485035,
+          "n_spoof": 698
+        },
+        "A12": {
+          "eer": 0.36642335766423356,
+          "n_spoof": 685
+        },
+        "A14": {
+          "eer": 0.4732937685459941,
+          "n_spoof": 674
+        },
+        "A15": {
+          "eer": 0.5491916859122401,
+          "n_spoof": 699
+        }
+      }
+    },
+    "B_lcnn_trimmed_aug": {
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 2756,
+        "total": 4921
+      },
+      "held_out_attacks": [
+        "A07",
+        "A12",
+        "A14",
+        "A15"
+      ],
+      "eer_attacks_seen_in_training": 0.12517321016166283,
+      "eer_attacks_unseen": 0.233256351039261,
+      "unseen_minus_seen": {
+        "difference": 0.10808314087759818,
+        "ci_low": 0.09651203588559246,
+        "ci_high": 0.1178696407083265,
+        "excludes_zero": true,
+        "paired": true,
+        "n_resamples": 1000
+      },
+      "per_attack_seen": {
+        "A07": {
+          "eer": 0.014326647564469915,
+          "n_spoof": 698
+        },
+        "A12": {
+          "eer": 0.24157043879907625,
+          "n_spoof": 685
+        },
+        "A14": {
+          "eer": 0.0466512702078522,
+          "n_spoof": 674
+        },
+        "A15": {
+          "eer": 0.05007153075822604,
+          "n_spoof": 699
+        }
+      },
+      "per_attack_unseen": {
+        "A07": {
+          "eer": 0.015759312320916905,
+          "n_spoof": 698
+        },
+        "A12": {
+          "eer": 0.3612009237875289,
+          "n_spoof": 685
+        },
+        "A14": {
+          "eer": 0.2166172106824926,
+          "n_spoof": 674
+        },
+        "A15": {
+          "eer": 0.21745350500715308,
+          "n_spoof": 699
+        }
+      }
+    },
+    "C_ssl_frozen": {
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 2756,
+        "total": 4921
+      },
+      "held_out_attacks": [
+        "A07",
+        "A12",
+        "A14",
+        "A15"
+      ],
+      "eer_attacks_seen_in_training": 0.009071117561683599,
+      "eer_attacks_unseen": 0.010159651669085631,
+      "unseen_minus_seen": {
+        "difference": 0.001088534107402032,
+        "ci_low": -0.0007256894049346881,
+        "ci_high": 0.003989330857386142,
+        "excludes_zero": false,
+        "paired": true,
+        "n_resamples": 1000
+      },
+      "per_attack_seen": {
+        "A07": {
+          "eer": 0.0014326647564469916,
+          "n_spoof": 698
+        },
+        "A12": {
+          "eer": 0.019399538106235514,
+          "n_spoof": 685
+        },
+        "A14": {
+          "eer": 0.0,
+          "n_spoof": 674
+        },
+        "A15": {
+          "eer": 0.005722460658082976,
+          "n_spoof": 699
+        }
+      },
+      "per_attack_unseen": {
+        "A07": {
+          "eer": 0.0014326647564469898,
+          "n_spoof": 698
+        },
+        "A12": {
+          "eer": 0.027737226277372264,
+          "n_spoof": 685
+        },
+        "A14": {
+          "eer": 0.0,
+          "n_spoof": 674
+        },
+        "A15": {
+          "eer": 0.00715307582260372,
+          "n_spoof": 699
+        }
+      }
+    }
+  },
+  "silence_ablation": {
+    "comparisons": {
+      "untrimmed_minus_trimmed": {
+        "difference": -0.146830336229073,
+        "ci_low": -0.1544458366379558,
+        "ci_high": -0.13778680870036897,
+        "excludes_zero": true,
+        "paired": true,
+        "n_resamples": 1000
+      },
+      "zeros_fixed_minus_trimmed": {
+        "difference": -0.018475750577367167,
+        "ci_low": -0.026470294611376385,
+        "ci_high": -0.00800347165147568,
+        "excludes_zero": true,
+        "paired": true,
+        "n_resamples": 1000
+      },
+      "zeros_fixed_minus_untrimmed": {
+        "difference": 0.12835458565170582,
+        "ci_low": 0.12132452865467276,
+        "ci_high": 0.13701345640569396,
+        "excludes_zero": true,
+        "paired": true,
+        "n_resamples": 1000
+      },
+      "noise_fixed_minus_trimmed": {
+        "difference": -0.011710229467507133,
+        "ci_low": -0.020323782803087005,
+        "ci_high": -0.0007320453695561552,
+        "excludes_zero": true,
+        "paired": true,
+        "n_resamples": 1000
+      },
+      "noise_fixed_minus_untrimmed": {
+        "difference": 0.13512010676156586,
+        "ci_low": 0.12655889145496535,
+        "ci_high": 0.14417128158054787,
+        "excludes_zero": true,
+        "paired": true,
+        "n_resamples": 1000
+      },
+      "zeros_original_duration_minus_trimmed": {
+        "difference": -0.1237875288683602,
+        "ci_low": -0.1323006105504097,
+        "ci_high": -0.11501154734411079,
+        "excludes_zero": true,
+        "paired": true,
+        "n_resamples": 1000
+      },
+      "zeros_original_duration_minus_untrimmed": {
+        "difference": 0.023042807360712785,
+        "ci_low": 0.01807175662431272,
+        "ci_high": 0.02753498233996038,
+        "excludes_zero": true,
+        "paired": true,
+        "n_resamples": 1000
+      },
+      "silence_only_ci": {
+        "eer": 0.04396112910689498,
+        "ci_low": 0.03945980877992178,
+        "ci_high": 0.048358402070192465,
+        "ci_width": 0.008898593290270686,
+        "bootstrap_std": 0.002349613017930374,
+        "n_resamples": 1000,
+        "n_bonafide": 2161,
+        "n_spoof": 6183
+      },
+      "untrimmed_minus_trimmed_on_silence_subset": {
+        "difference": -0.13423904253598576,
+        "ci_low": -0.14338967596587285,
+        "ci_high": -0.12593389099681673,
+        "excludes_zero": true,
+        "paired": true,
+        "n_resamples": 1000
+      },
+      "silence_only_minus_trimmed_on_silence_subset": {
+        "difference": -0.09610032973185642,
+        "ci_low": -0.10603949769572389,
+        "ci_high": -0.08703718672124451,
+        "excludes_zero": true,
+        "paired": true,
+        "n_resamples": 1000
+      },
+      "silence_only_minus_untrimmed_on_silence_subset": {
+        "difference": 0.03813871280412933,
+        "ci_low": 0.033780657103193,
+        "ci_high": 0.042536908196355444,
+        "excludes_zero": true,
+        "paired": true,
+        "n_resamples": 1000
+      }
+    },
+    "findings": [
+      {
+        "test": "shortcut",
+        "text": "Untrimmed vs trimmed on the same clips: -0.1468 EER (CI [-0.1544, -0.1378]) -- the silence shortcut is present."
+      },
+      {
+        "test": "duration",
+        "text": "Silence replaced by digital zeros *at its original length* still beats trimmed by 0.1238 EER, so silence duration/position alone reaches the model. It still trails untrimmed by 0.0230 EER (CI excludes zero), so the silence's content adds information on top of its length. Does NOT show: which property of the content matters."
+      },
+      {
+        "test": "zeros_fixed",
+        "text": "zeros_fixed: -0.0185 EER vs trimmed (CI [-0.0265, -0.0080]) -- significantly different from trimmed, so the replacement itself carries or disrupts signal. Does NOT separate duration from content on its own."
+      },
+      {
+        "test": "noise_fixed",
+        "text": "noise_fixed: -0.0117 EER vs trimmed (CI [-0.0203, -0.0007]) -- significantly different from trimmed, so the replacement itself carries or disrupts signal. Does NOT separate duration from content on its own."
+      },
+      {
+        "test": "content",
+        "text": "A classifier given only 0.2s of each clip's genuine silence (fixed length, so no duration information) reaches EER 0.0440 [0.0395, 0.0484] on 2161 bf / 6183 sp -- the silence *content* carries label information beyond duration. Does NOT show: which acoustic property (noise floor, spectral shape, codec) it is, and it only covers clips with at least that much silence."
+      }
+    ]
+  },
+  "leaderboard": [
+    {
+      "group": "U_lcnn_untrimmed_SHORTCUT",
+      "kind": "lcnn",
+      "features": "untrimmed",
+      "split": "P1",
+      "role": "shortcut comparison -- NOT a result",
+      "seeds": [
+        42
+      ],
+      "eer_per_seed": [
+        0.004670818505338078
+      ],
+      "eer_mean": 0.004670818505338078,
+      "eer_std": null,
+      "ci_first_seed": [
+        0.003444728647686833,
+        0.006466512702078542
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      }
+    },
+    {
+      "group": "C_ssl_frozen",
+      "kind": "ssl",
+      "features": "ssl",
+      "split": "P1",
+      "role": "frozen SSL front-end",
+      "seeds": [
+        42,
+        43,
+        44
+      ],
+      "eer_per_seed": [
+        0.01834964412811388,
+        0.015242494226327952,
+        0.018794483985765123
+      ],
+      "eer_mean": 0.017462207446735652,
+      "eer_std": 0.0015800455078632673,
+      "ci_first_seed": [
+        0.015789629272722792,
+        0.021241103202846976
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      }
+    },
+    {
+      "group": "S_zeros_original_duration",
+      "kind": "lcnn",
+      "features": "zeros_original_duration",
+      "split": "P1",
+      "role": "silence ablation",
+      "seeds": [
+        42
+      ],
+      "eer_per_seed": [
+        0.02771362586605086
+      ],
+      "eer_mean": 0.02771362586605086,
+      "eer_std": null,
+      "ci_first_seed": [
+        0.023094688221709014,
+        0.0322508896797153
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      }
+    },
+    {
+      "group": "S_silence_only",
+      "kind": "lcnn",
+      "features": "silence_only",
+      "split": "P1",
+      "role": "silence ablation",
+      "seeds": [
+        42
+      ],
+      "eer_per_seed": [
+        0.04396112910689498
+      ],
+      "eer_mean": 0.04396112910689498,
+      "eer_std": null,
+      "ci_first_seed": [
+        0.03945980877992178,
+        0.048358402070192465
+      ],
+      "test_counts": {
+        "bonafide": 2161,
+        "spoof": 6183,
+        "total": 8344
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 10910,
+        "total": 15009
+      }
+    },
+    {
+      "group": "B_lcnn_trimmed_aug",
+      "kind": "lcnn",
+      "features": "trimmed",
+      "split": "P1",
+      "role": "augmentation",
+      "seeds": [
+        42
+      ],
+      "eer_per_seed": [
+        0.09830960854092527
+      ],
+      "eer_mean": 0.09830960854092527,
+      "eer_std": null,
+      "ci_first_seed": [
+        0.09237875288683606,
+        0.10484988452655886
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      }
+    },
+    {
+      "group": "S_zeros_fixed",
+      "kind": "lcnn",
+      "features": "zeros_fixed",
+      "split": "P1",
+      "role": "silence ablation",
+      "seeds": [
+        42
+      ],
+      "eer_per_seed": [
+        0.1330254041570439
+      ],
+      "eer_mean": 0.1330254041570439,
+      "eer_std": null,
+      "ci_first_seed": [
+        0.12655889145496535,
+        0.14146741548042702
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      }
+    },
+    {
+      "group": "S_noise_fixed",
+      "kind": "lcnn",
+      "features": "noise_fixed",
+      "split": "P1",
+      "role": "silence ablation",
+      "seeds": [
+        42
+      ],
+      "eer_per_seed": [
+        0.13979092526690393
+      ],
+      "eer_mean": 0.13979092526690393,
+      "eer_std": null,
+      "ci_first_seed": [
+        0.13233390162566883,
+        0.14872979214780602
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      }
+    },
+    {
+      "group": "A_lcnn_trimmed",
+      "kind": "lcnn",
+      "features": "trimmed",
+      "split": "P1",
+      "role": "headline",
+      "seeds": [
+        42,
+        43,
+        44
+      ],
+      "eer_per_seed": [
+        0.15150115473441106,
+        0.12655889145496535,
+        0.16027713625866047
+      ],
+      "eer_mean": 0.14611239414934563,
+      "eer_std": 0.01428306838282877,
+      "ci_first_seed": [
+        0.14279188377865262,
+        0.15889145496535795
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 8992,
+        "total": 11157
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 16099,
+        "total": 20198
+      }
+    },
+    {
+      "group": "C_ssl_frozen_P2",
+      "kind": "ssl",
+      "features": "ssl",
+      "split": "P2",
+      "role": "attack-disjoint",
+      "seeds": [
+        42
+      ],
+      "eer_per_seed": [
+        0.010159651669085631
+      ],
+      "eer_mean": 0.010159651669085631,
+      "eer_std": null,
+      "ci_first_seed": [
+        0.007619738751814224,
+        0.014150943396226415
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 2756,
+        "total": 4921
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 11208,
+        "total": 15307
+      }
+    },
+    {
+      "group": "B_lcnn_trimmed_aug_P2",
+      "kind": "lcnn",
+      "features": "trimmed",
+      "split": "P2",
+      "role": "attack-disjoint",
+      "seeds": [
+        42
+      ],
+      "eer_per_seed": [
+        0.233256351039261
+      ],
+      "eer_mean": 0.233256351039261,
+      "eer_std": null,
+      "ci_first_seed": [
+        0.2209677436925356,
+        0.244806607125499
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 2756,
+        "total": 4921
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 11208,
+        "total": 15307
+      }
+    },
+    {
+      "group": "A_lcnn_trimmed_P2",
+      "kind": "lcnn",
+      "features": "trimmed",
+      "split": "P2",
+      "role": "attack-disjoint",
+      "seeds": [
+        42
+      ],
+      "eer_per_seed": [
+        0.4056603773584906
+      ],
+      "eer_mean": 0.4056603773584906,
+      "eer_std": null,
+      "ci_first_seed": [
+        0.3911375181422351,
+        0.41799709724238027
+      ],
+      "test_counts": {
+        "bonafide": 2165,
+        "spoof": 2756,
+        "total": 4921
+      },
+      "train_counts": {
+        "bonafide": 4099,
+        "spoof": 11208,
+        "total": 15307
+      }
+    }
+  ],
+  "ci_shrinkage": {
+    "ci_width_at_phase2b_test_size": 0.016099571186705325,
+    "phase2b_test_counts": {
+      "bonafide": 2165,
+      "spoof": 8992,
+      "total": 11157
+    },
+    "ci_width_at_phase2_test_size": 0.05292399323135784,
+    "phase2_test_counts": {
+      "bonafide": 182,
+      "spoof": 1643
+    },
+    "width_ratio": 0.30420174676400297,
+    "method": "same headline model's test scores, bootstrapped at Phase 2's class counts vs the full Phase 2B test set"
+  },
+  "in_the_wild": {
+    "status": "ok",
+    "source": "datasets/mueller91/In-The-Wild/release_in_the_wild.zip",
+    "report": {
+      "metadata_member": "release_in_the_wild/meta.csv",
+      "file_column": "file",
+      "label_column": "label",
+      "raw_label_values": [
+        "bona-fide",
+        "spoof"
+      ],
+      "rows": 31779,
+      "rows_bonafide": 19963,
+      "rows_spoof": 11816,
+      "requested_per_class": 100,
+      "loaded": 200,
+      "loaded_bonafide": 100,
+      "loaded_spoof": 100,
+      "failed": 0,
+      "failures": []
+    },
+    "counts": {
+      "bonafide": 100,
+      "spoof": 100
+    },
+    "models": {
+      "headline_A": {
+        "model": "A_lcnn_trimmed_P1_s42",
+        "eer": 0.73,
+        "ci": [
+          0.6699999999999999,
+          0.81
+        ],
+        "in_domain_eer": 0.15150115473441106
+      },
+      "best_C_ssl_frozen": {
+        "model": "C_ssl_P1_s42",
+        "eer": 0.09999999999999998,
+        "ci": [
+          0.050000000000000044,
+          0.15
+        ],
+        "in_domain_eer": 0.01834964412811388
+      },
+      "untrimmed_SHORTCUT": {
+        "model": "U_lcnn_untrimmed_P1_s42",
+        "eer": 0.63,
+        "ci": [
+          0.56,
+          0.69
+        ],
+        "in_domain_eer": 0.004670818505338078
+      },
+      "ssl_C": {
+        "model": "C_ssl_P1_s42",
+        "eer": 0.09999999999999998,
+        "ci": [
+          0.050000000000000044,
+          0.15
+        ],
+        "in_domain_eer": 0.01834964412811388
+      }
+    }
+  },
+  "closing_paragraph": "Headline (LCNN on trimmed LFCC, speaker-disjoint, shared attacks): EER 0.1461 +/- 0.0143 over 3 seeds (95% CI of the first seed [0.1428, 0.1589]) on 2165 bonafide / 8992 spoof test clips, trained on 7355 bonafide clips (Phase 2: 619). At Phase 2's test size the same model's CI would be 0.0529 wide; here it is 0.0161. Best family on validation: C_ssl_frozen, test EER 0.0175 +/- 0.0016 over 3 seeds (CI [0.0158, 0.0212]). Attack-disjoint (held-out A07, A12, A14, A15, same test clips): A_lcnn_trimmed: 0.1695 seen -> 0.4057 unseen (gap +0.2361, CI [+0.2200, +0.2522]); B_lcnn_trimmed_aug: 0.1252 seen -> 0.2333 unseen (gap +0.1081, CI [+0.0965, +0.1179]); C_ssl_frozen: 0.0091 seen -> 0.0102 unseen (gap +0.0011, CI [-0.0007, +0.0040]). Silence ablations: Untrimmed vs trimmed on the same clips: -0.1468 EER (CI [-0.1544, -0.1378]) -- the silence shortcut is present. Silence replaced by digital zeros *at its original length* still beats trimmed by 0.1238 EER, so silence duration/position alone reaches the model. It still trails untrimmed by 0.0230 EER (CI excludes zero), so the silence's content adds information on top of its length. Does NOT show: which property of the content matters. zeros_fixed: -0.0185 EER vs trimmed (CI [-0.0265, -0.0080]) -- significantly different from trimmed, so the replacement itself carries or disrupts signal. Does NOT separate duration from content on its own. noise_fixed: -0.0117 EER vs trimmed (CI [-0.0203, -0.0007]) -- significantly different from trimmed, so the replacement itself carries or disrupts signal. Does NOT separate duration from content on its own. A classifier given only 0.2s of each clip's genuine silence (fixed length, so no duration information) reaches EER 0.0440 [0.0395, 0.0484] on 2161 bf / 6183 sp -- the silence *content* carries label information beyond duration. Does NOT show: which acoustic property (noise floor, spectral shape, codec) it is, and it only covers clips with at least that much silence. In-the-Wild (100 bonafide / 100 spoof clips, 0 failed to load): headline_A 0.7300 [0.6700, 0.8100] (in-domain 0.1515); best_C_ssl_frozen 0.1000 [0.0500, 0.1500] (in-domain 0.0183); untrimmed_SHORTCUT 0.6300 [0.5600, 0.6900] (in-domain 0.0047); ssl_C 0.1000 [0.0500, 0.1500] (in-domain 0.0183). Scope limits that remain: every clip is from the LA evaluation partition (not the official train/eval protocol), so no comparison with published ASVspoof numbers is valid; attack-disjoint uses 4 held-out attacks from one seeded draw; the SSL encoder is frozen, not fine-tuned.",
+  "run_hours": 1.74
+}

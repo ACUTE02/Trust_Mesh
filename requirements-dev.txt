@@ -1,0 +1,40 @@
+# Local development environment: CPU-only, for unit tests, notebook smoke tests and lint.
+# No real training happens locally -- that runs on Kaggle (see docs/kaggle_setup.md).
+#
+# Create (never install into the global Python):
+#   py -3.11 -m venv .venv
+#   .venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+# Run:
+#   .venv\Scripts\python.exe -m pytest tests/test_graph_modules.py
+#   .venv\Scripts\python.exe tests/smoke_notebook_02.py
+#   .venv\Scripts\python.exe -m pytest tests/test_visual_modules.py
+#   .venv\Scripts\python.exe tests/smoke_notebook_05.py
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.0+cpu
+torchvision==0.29.0+cpu
+torch-geometric==2.8.0.post1
+numpy==2.4.6
+pandas==3.0.5
+scikit-learn==1.9.1
+xgboost==3.2.0
+optuna==5.0.0
+networkx==3.6.1
+matplotlib==3.11.2
+soundfile==0.14.0
+fsspec==2026.7.0
+# Voice SSL front-end and the Visual Engine (CLIP image tower, Parquet range reads, image decoding):
+transformers==5.17.0
+huggingface_hub==1.33.0
+pyarrow==25.0.1
+pillow==12.3.0
+scipy==1.17.1
+pytest==9.1.1
+pyflakes==3.4.0
+# Serving layer and its tests (tests/test_serving.py), plus the screenshot script (websockets, requests):
+fastapi==0.136.0
+uvicorn==0.54.0
+python-multipart==0.0.32
+neo4j==6.4.0
+requests==2.34.2
+httpx==0.28.1
+websockets==17.2

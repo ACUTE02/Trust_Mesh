@@ -1,0 +1,218 @@
+{
+  "smoke_test": false,
+  "eda": {
+    "dataset": "SpeechAntiSpoofingBenchmarks/ASVspoof2019_LA (split 'test' = LA evaluation partition)",
+    "clips_requested": 6000,
+    "clips_loaded": 6000,
+    "bonafide": 619,
+    "spoof": 5381,
+    "bonafide_share": 0.10316666666666667,
+    "pos_weight_for_bonafide": 8.693053311793214,
+    "speakers": 67,
+    "sample_rates_hz": [16000],
+    "duration_s": {
+      "mean": 3.1234330937500006,
+      "min": 0.558125,
+      "max": 13.0105,
+      "median": 2.8226875,
+      "total_hours": 5.205721822916668
+    }
+  },
+  "feature_config": {
+    "front_end": "LFCC + delta + delta-delta",
+    "n_coeffs": 20,
+    "n_features": 60,
+    "n_frames": 401,
+    "clip_seconds": 4.0,
+    "window_ms": 20.0,
+    "hop_ms": 10.0,
+    "n_linear_filters": 70,
+    "trim_top_db": 30.0,
+    "why_lfcc": "LFCC is the official ASVspoof 2019/2021 baseline front-end; linear filter spacing keeps high-frequency resolution where vocoder/TTS artifacts live, which mel spacing compresses away."
+  },
+  "silence_leakage": {
+    "before_trim": {
+      "total_s": {
+        "eer": 0.4155361456978257,
+        "direction": "higher_is_bonafide",
+        "point_biserial_r": 0.0739370574660294,
+        "mean_bonafide": 3.451297455573506,
+        "mean_spoof": 3.0857174200892032
+      },
+      "lead_silence_s": {
+        "eer": 0.17987728837232506,
+        "direction": "higher_is_bonafide",
+        "point_biserial_r": 0.43853025201936785,
+        "mean_bonafide": 1.1047172859450727,
+        "mean_spoof": 0.29514774205538
+      },
+      "trail_silence_s": {
+        "eer": 0.36554543765099423,
+        "direction": "higher_is_bonafide",
+        "point_biserial_r": 0.2225206349912192,
+        "mean_bonafide": 0.5511035945072699,
+        "mean_spoof": 0.29160666000743357
+      },
+      "speech_s": {
+        "eer": 0.3998805078416729,
+        "direction": "lower_is_bonafide",
+        "point_biserial_r": -0.14991420329246397,
+        "mean_bonafide": 1.7954765751211632,
+        "mean_spoof": 2.498963018026389
+      },
+      "silence_ratio": {
+        "eer": 0.1832373164839249,
+        "direction": "higher_is_bonafide",
+        "point_biserial_r": 0.4571437781663363,
+        "mean_bonafide": 0.4783102520737133,
+        "mean_spoof": 0.1918735350674987
+      }
+    },
+    "after_trim": {
+      "total_s": {
+        "eer": 0.3998805078416729,
+        "direction": "lower_is_bonafide",
+        "point_biserial_r": -0.14991420329246397,
+        "mean_bonafide": 1.7954765751211632,
+        "mean_spoof": 2.498963018026389
+      },
+      "lead_silence_s": {"eer": NaN, "note": "constant measure"},
+      "trail_silence_s": {"eer": NaN, "note": "constant measure"},
+      "speech_s": {
+        "eer": 0.3998805078416729,
+        "direction": "lower_is_bonafide",
+        "point_biserial_r": -0.14991420329246397,
+        "mean_bonafide": 1.7954765751211632,
+        "mean_spoof": 2.498963018026389
+      },
+      "silence_ratio": {"eer": NaN, "note": "constant measure"}
+    },
+    "verdict_before": {
+      "level": "strong",
+      "worst_measure": "lead_silence_s",
+      "worst_eer": 0.17987728837232506,
+      "text": "Timing alone separates the classes well (lead_silence_s EER 0.1799), so this data carries the known ASVspoof silence-duration shortcut."
+    },
+    "verdict_after": {
+      "level": "mild",
+      "worst_measure": "total_s",
+      "worst_eer": 0.3998805078416729,
+      "text": "Timing alone is weakly predictive (total_s EER 0.3999) -- some leakage, but far from a free solution."
+    },
+    "worst_eer_before": 0.17987728837232506,
+    "worst_eer_after": 0.3998805078416729,
+    "note": "Every model input is a fixed-length window, so absolute clip duration cannot reach the model regardless; these probes measure what the raw data leaks, and the trimmed-vs-untrimmed models below measure whether the model actually exploited it.",
+    "duration_vs_content_note": "HYPOTHESIS, not a finding (tested by Phase 2B's silence ablations): the duration probes top out at EER 0.1799, but the model trained on untrimmed audio reaches 0.0097. One explanation is that the silence's content (e.g. noise floor / room tone in bonafide recordings vs. near-digital silence in synthesised clips) matters beyond its length -- but the gap alone doesn't prove it, since the model also sees speech position and silence/speech interaction, which a single timing number can't capture."
+  },
+  "splits": {
+    "speaker_disjoint": {
+      "train": {"bonafide": 353, "spoof": 2929, "total": 3282},
+      "test": {"bonafide": 182, "spoof": 1643, "total": 1825},
+      "train_speakers": 38,
+      "test_speakers": 19,
+      "shared_speakers": 0,
+      "n_train": 3282,
+      "n_val": 893,
+      "n_test": 1825,
+      "val_counts": {"bonafide": 84, "spoof": 809, "total": 893}
+    },
+    "random": {
+      "train": {"bonafide": 346, "spoof": 3014, "total": 3360},
+      "test": {"bonafide": 194, "spoof": 1606, "total": 1800},
+      "train_speakers": 67,
+      "test_speakers": 67,
+      "shared_speakers": 67,
+      "n_train": 3360,
+      "n_val": 840,
+      "n_test": 1800,
+      "val_counts": {"bonafide": 79, "spoof": 761, "total": 840}
+    }
+  },
+  "models": {
+    "lcnn_trimmed_speaker_disjoint": {
+      "features": "trimmed",
+      "split": "speaker_disjoint",
+      "role": "headline model",
+      "eer": 0.23797930614729154,
+      "eer_threshold": 1.194761349453987,
+      "per_class_at_eer_threshold": {
+        "threshold": 1.194761349453987,
+        "bonafide_accuracy": 0.7582417582417582,
+        "spoof_accuracy": 0.7620206938527084,
+        "overall_accuracy": 0.7616438356164383,
+        "n_bonafide": 182,
+        "n_spoof": 1643
+      },
+      "best_val_eer": 0.2620519159456119,
+      "best_epoch": 3,
+      "validation_usable": true,
+      "epochs_run": 9,
+      "train_seconds": 30.6,
+      "train_loss_first_last": [1.1646395144049966, 0.16614273763026208]
+    },
+    "lcnn_untrimmed_speaker_disjoint": {
+      "features": "untrimmed",
+      "split": "speaker_disjoint",
+      "role": "silence-leakage comparison",
+      "eer": 0.009738283627510651,
+      "eer_threshold": -0.6420851766664077,
+      "per_class_at_eer_threshold": {
+        "threshold": -0.6420851766664077,
+        "bonafide_accuracy": 0.989010989010989,
+        "spoof_accuracy": 0.9902617163724894,
+        "overall_accuracy": 0.9901369863013698,
+        "n_bonafide": 182,
+        "n_spoof": 1643
+      },
+      "best_val_eer": 0.013597033374536464,
+      "best_epoch": 17,
+      "validation_usable": true,
+      "epochs_run": 23,
+      "train_seconds": 76.4,
+      "train_loss_first_last": [0.7636527488465573, 0.005419562623531334]
+    },
+    "lcnn_trimmed_random_split": {
+      "features": "trimmed",
+      "split": "random",
+      "role": "speaker-leakage comparison",
+      "eer": 0.23711340206185572,
+      "eer_threshold": 1.5228632211685178,
+      "per_class_at_eer_threshold": {
+        "threshold": 1.5228632211685178,
+        "bonafide_accuracy": 0.7628865979381443,
+        "spoof_accuracy": 0.7627646326276464,
+        "overall_accuracy": 0.7627777777777778,
+        "n_bonafide": 194,
+        "n_spoof": 1606
+      },
+      "best_val_eer": 0.2614980289093298,
+      "best_epoch": 3,
+      "validation_usable": true,
+      "epochs_run": 9,
+      "train_seconds": 30.7,
+      "train_loss_first_last": [1.1563605348269144, 0.18257850117626645]
+    }
+  },
+  "cross_dataset_spot_check": {
+    "status": "failed",
+    "error": "LibsndfileError: Error opening 'zip://release_in_the_wild/10157.wav::hf://datasets/mueller91/In-The-Wild@eee168f92c367f8c82ff2cf42b6f61e362fd6211/release_in_the_wild.zip': System error.",
+    "note": "Cross-dataset spot-check skipped; in-domain results above are unaffected.",
+    "root_cause": "In-the-Wild ships as a zip, so `datasets` hands back a chained fsspec URL (zip://...::hf://...) rather than raw bytes, and libsndfile cannot open that path directly. Fixed in engines/voice/data.py (open via fsspec and hand soundfile the bytes); needs a re-run to produce a number.",
+    "fixed_in_code": true
+  },
+  "closing_paragraph": "Headline: an LCNN on LFCC features reaches 0.2380 EER on a held-out, speaker-disjoint test split of 1825 clips drawn from a 6000-clip subset of the ASVspoof 2019 LA evaluation partition. Silence leakage: before trimming, the most predictive timing measure alone reached EER 0.1799 (lead_silence_s); after trimming, 0.3999. Timing alone separates the classes well (lead_silence_s EER 0.1799), so this data carries the known ASVspoof silence-duration shortcut. Training on untrimmed features scored 0.2282 EER *better* (0.0097), i.e. the model does exploit silence when it is left in -- trimming removes a real shortcut rather than a hypothetical one. Speaker leakage did not inflate the number here: random-split EER (0.2371) is not better than the speaker-disjoint EER (0.2380). Out of domain: the spot-check did not run, so nothing is claimed about generalization. Scope limit: every clip comes from the LA evaluation partition, so the same spoofing systems appear in train and test. Performance against unseen attack types is not measured.",
+  "interpretation_added_after_the_run": {
+    "headline_eer": 0.23797930614729154,
+    "silence_shortcut_eer": 0.009738283627510651,
+    "silence_effect_eer": 0.2282410225197809,
+    "speaker_leakage_effect_eer": -0.0008658040854358234,
+    "corrections": "2026-09-28: notes corrected per Phase 2B pre-flight -- removed the false claim that 0.0097 beat the 2019 challenge winner (~0.2% EER on the official protocol; not comparable anyway), relabelled the silence-content explanation as a hypothesis, and replaced 'speaker leakage is nothing' with 'not detectable at this sample size'. The measured numbers above are unchanged.",
+    "notes": [
+      "The 0.0097 EER untrimmed model is the number a careless pipeline would have reported. It is far better than the official LFCC-GMM baseline range, which for a small CNN is itself the sign of a shortcut. (No published-number comparison is valid: those are on the official protocol, this is not.)",
+      "HYPOTHESIS (tested by Phase 2B's silence ablations): the best timing-only probe reaches EER 0.1799 while the model given the actual silent samples reaches 0.0097, which suggests silence content matters beyond its length -- not yet shown.",
+      "Speaker leakage measured at -0.0009 EER: not detectable at this sample size (the strongest claim allowed with ~180 bonafide test clips and one seed). Unlike the graph engine's temporal-vs-random gap of +0.26, sharing speakers across the split did not inflate this task. Plausible reason: spoof detection keys on synthesis artifacts, not voice identity. Caveat: single seed, and the two splits have different test sets (1825 vs 1800 clips), so a difference this small is inside the noise either way.",
+      "Not comparable to published ASVspoof numbers: the official protocol trains on attacks A01-A06 and tests on unseen A07-A19, while this setup trains and tests on the same attack family, and uses 3282 training clips rather than the full 25380-clip train partition.",
+      "The trimmed model is data-limited: only 353 bonafide clips in training, best validation EER at epoch 3 while training loss kept falling to 0.166 -- it overfits quickly. A larger N_CLIPS is the obvious next lever."
+    ]
+  }
+}
