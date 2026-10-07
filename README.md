@@ -115,6 +115,9 @@ flowchart LR
 - The Visual Engine is designed and coded but has never been run. The fusion layer has an empty slot for it and
   nothing else.
 - Eight local test clips were scored correctly during verification. That is a plumbing check, not an accuracy result.
+- **The voice model does not cope with ordinary phone recordings.** In a small self-test, three genuine phone recordings
+  were all flagged as fake, and genuine research recordings mostly stopped passing once compressed like a voice memo.
+  The reported error rate holds for the research test set only. See `docs/SELF_TEST_REPORT.md`.
 - One dataset per engine. Nothing here says the findings transfer to other transaction graphs or other speech corpora
   beyond the small In-the-Wild check.
 

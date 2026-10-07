@@ -345,6 +345,10 @@ export function VoicePage() {
           <li className="rule-t pt-3">We tested on one dataset, plus a small check on a second one.</li>
           <li className="rule-t pt-3">The fake recordings in the data date from 2019. A newer voice generator may not be caught.</li>
           <li className="rule-t pt-3">
+            It struggles with ordinary phone recordings. In a small check, genuine phone clips were flagged as fake. The
+            model learned from clean studio recordings.
+          </li>
+          <li className="rule-t pt-3">
             The warning levels were set using the same test recordings. So they do not tell you how often a real caller would be
             wrongly flagged.
           </li>
@@ -358,6 +362,10 @@ export function VoicePage() {
             </li>
             <li>Verdict thresholds are in-sample: set on the same test scores the EER is reported on.</li>
             <li>Single-seed serving: the API loads seed 42 of Model D; the reported figure is a three-seed mean.</li>
+            <li>
+              Codec sensitivity: a small self-test (not an accuracy measurement) saw genuine AAC-compressed recordings flagged
+              as spoof. No codec augmentation was used in training. Details: docs/SELF_TEST_REPORT.md.
+            </li>
             <li>Models E (BiLSTM on frozen tokens) and F (on-the-fly augmentation) never completed a real run: untested, not disproven.</li>
           </ul>
         </ForEngineers>

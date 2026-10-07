@@ -56,7 +56,11 @@ is the test-set result on the page (the score on later transactions the model ne
    (Or record on your phone, save the file, and use "Choose an audio file".)
 
 **You should see:** a picture of your recording, a score between 0 and 1, and a risk level. For a real voice you
-would **expect the genuine side**: a low score and "low risk". Write down what you got.
+would hope for the genuine side: a low score and "low risk". Write down what you got.
+
+**Known result (self-test, 2026-10-08):** three genuine phone recordings of the owner were all flagged "high risk".
+Compressed phone audio seems to confuse this model. So do not be surprised if your own voice is flagged. See
+`docs/SELF_TEST_REPORT.md`, section 6.
 
 3. Make a fake clip with any free text-to-speech tool. Save it as MP3 or WAV. Upload it and score it. Write down
    what you got.
@@ -105,7 +109,7 @@ has the full graph, and the combined score equals the average of its two parts.
 ```
 .venv\Scripts\python.exe -m pytest tests -q
 ```
-**Pass looks like:** a last line such as `109 passed`.
+**Pass looks like:** a last line such as `116 passed`.
 **A pass means:** the code does what its own small tests expect, on made-up data. It says nothing about accuracy
 on real data.
 
@@ -119,7 +123,7 @@ on real data.
 cd frontend
 npm run build
 ```
-**Pass looks like:** `26 passed` and then `built in ...`.
+**Pass looks like:** `28 passed` and then `built in ...`.
 **A pass means:** the site builds, and no page shows a number that is not in the data file.
 
 Note: `verify_serving.py` uses a few local test recordings in `data\demo_clips`. They are dataset files kept on

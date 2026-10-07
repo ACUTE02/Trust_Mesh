@@ -1076,6 +1076,20 @@ are replaced by `PHASE_2_FRONTEND_REVISION_1.md`: plain language by default, exa
 - **`/health` is retried** for about 75 seconds, because a page opened during start-up otherwise stayed on "service not
   running".
 
+### Self-test follow-ups (2026-10-08)
+- **Input guards belong to the service, not the model.** Silence is refused and under one second of sound is flagged.
+  The one-second line is an engineering choice, not a measured threshold. Noise and tones are still scored: detecting
+  "not speech" would need a voice-activity model, which is out of scope.
+- **`record=false`** on the scoring endpoints lets the verify and self-test scripts run without touching the cases table.
+- **Recording mode is a display mask, not a security boundary.** The API still returns real values; the site hides them
+  so a video does not show them. It is for recording on the owner's machine, not for a public deployment.
+- **The site no longer waits for the API.** nginx looks the API up per request, so a missing weight file shows as "the
+  scoring service did not answer" on a working site instead of a stack that never opens.
+- **The owner's voice-clip results stay outside the repository.** The self-test report carries counts only; the per-clip
+  table is next to the clips. The owner asked for both a table in the report and for per-clip data never to enter the
+  repository; the second instruction was followed because the report is committed.
+- **The phone-audio finding went on the voice page as a plain limit, with no number**, because three pairs is not a rate.
+
 ### Dataset content check
 The saved screenshots are the pages' empty states: aggregate results, no scored case, no clip, no label, no weight.
 `scripts/check_no_dataset_outputs.py` passes on them. The transaction row numbers in the example menu are identifiers,

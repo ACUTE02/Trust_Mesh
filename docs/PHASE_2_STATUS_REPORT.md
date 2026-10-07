@@ -318,3 +318,37 @@ Spec: `PHASE_2_FRONTEND_REVISION_1.md` (parent `docs/` folder). Test counts afte
   re-observed recovering during a restart.
 - The steps in `docs/HOW_TO_TEST_MYSELF.md` that need a person: recording, a text-to-speech clip, a phone.
 - A clean-machine start, any deployment, and everything else listed as untested under WP8 and WP9.
+
+## Self-test — ST1 to ST10 (2026-10-08)
+
+Runbook: `PHASE_2_SELF_TEST_RUNBOOK.md` plus the owner's extra step ST10. Full results in easy language:
+`docs/SELF_TEST_REPORT.md`. Test counts after this run:
+
+- Python unit tests (`pytest tests`): 116 passed
+- Frontend tests (inside `npm run build`): 28 passed
+- `scripts/verify_serving.py` against the Docker stack: 12 of 12 ok
+
+| Step | Result |
+|---|---|
+| ST1 headline numbers | Reproduced. Graph 0.7474 (difference 0.00003). Voice per seed 0.0194, 0.0152, 0.0152; mean 0.0166, spread 0.0019. Tolerance 0.0005. No stop condition. |
+| ST2 live against offline | Graph: 200 test nodes, maximum difference 0. Voice: **not run**, the evaluation audio is not local. |
+| ST3 thresholds out of sample | 200 half-splits: genuine flagged high 1.1 in 100 (in-sample 1.0); fakes flagged medium or high 99.5 in 100 (in-sample 99.5). An estimate from one dataset. Served thresholds unchanged; nothing added to the site. |
+| ST4 seed-42 interval | EER 0.0194, 95% interval 0.0159 to 0.0214 (1,000 stratified resamples). |
+| ST5 fail-safe | 12 cases. Two real faults found and fixed (silence was scored "low risk"; a 0.1 s clip got a confident score). All pass now. Known limit: no check that a sound is speech. |
+| ST6 browser | Every control reached by Tab on all pages; all three desks run by keyboard; reduced motion turns the animation off; axe-core 0 violations in 12 runs; no overflow in 36 combinations; microphone flow works with a fake device (a tone, not speech). |
+| ST7 clean checkout | Two real faults found and fixed: `frontend/src/data/` was never committed (the root `data/` ignore rule hid it), so a fresh clone could not build the site; and missing files produced a traceback with the site never starting. Now a plain list is printed and the site still opens. API image rebuild in the clone timed out (about 1 GB of packages); the existing image built from the same code was used. |
+| ST8 clean-ups | `verify_serving.py` leaves no rows (`record=false`, checked by the script and a unit test); issue #45 investigated, report only; sanitised `results.json` copy written and left uncommitted (79 of 81 entries check against it); recording mode added and tested. |
+| ST9 report | `docs/SELF_TEST_REPORT.md`. |
+| ST10 owner's clips | 3 pairs. **0 of 3 genuine recordings passed; all 3 were flagged high. 3 of 3 clones were flagged high.** The model did not separate them. A 4-clip diagnostic (genuine dataset recordings re-encoded as low-bitrate AAC) moved 3 of 4 out of "low". A small demo check, not an accuracy measurement. Per-clip data is outside the repository. |
+
+**Serving-layer changes made in this run (no model code):** silent audio refused; very short audio flagged
+(`low_confidence`, `warnings`); plain messages for empty and unreadable files; `record=false` on the three scoring
+endpoints; `recording_mode` in `/health`; `serving/preflight.py` and its use in the loader and API; nginx resolves the
+API per request and the frontend no longer waits for the API; the instrument no longer depends on an animation frame.
+**Repository change:** `.gitignore` `data/` became `/data/`; `frontend/src/data/` is now tracked.
+**Installed:** `imageio-ffmpeg` and `axe-core`, both inside the project (`.venv` and `frontend/node_modules`). Nothing system-wide.
+**Created outside the repository:** `E:\TrustMesh\my_voice_tests\_converted_wav\` (WAV copies), `MY_VOICE_RESULTS.md` and
+`my_voice_results.json` next to them. The clean-clone folder and its images were removed after the test.
+
+**Not run:** the voice half of ST2; a first start with real downloads; real speech through the microphone; screen
+readers; a real phone; the shortest-path box by keyboard and in recording mode; anything needing training.
