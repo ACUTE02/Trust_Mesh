@@ -401,3 +401,26 @@ def test_health_reports_recording_mode(client, monkeypatch):
     assert client.get("/health").json()["recording_mode"] is False
     monkeypatch.setattr(config, "RECORDING_MODE", True)
     assert client.get("/health").json()["recording_mode"] is True
+
+
+def test_preflight_lists_missing_files_in_plain_words(tmp_path, monkeypatch):
+    from serving import preflight
+    monkeypatch.setattr(config, "ARTIFACTS_DIR", tmp_path / "artifacts")
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path / "data")
+    monkeypatch.setattr(config, "ELLIPTIC_ROOT", tmp_path / "data" / "elliptic")
+    text, blocking = preflight.report()
+    assert blocking is True
+    for needle in ("REQUIRED: artifacts/graph/xgboost_tier1_tier2.json", "REQUIRED: artifacts/voice/phase2c_D_ssl_mean_only_P1_s42.pt",
+                   "optional: data/models/wav2vec2-xls-r-300m/pytorch_model.bin", "Files you must supply"):
+        assert needle in text
+    (tmp_path / "artifacts" / "graph").mkdir(parents=True)
+    (tmp_path / "artifacts" / "graph" / "xgboost_tier1_tier2.json").write_text("{}")
+    (tmp_path / "artifacts" / "graph" / "gat_weights.pt").write_bytes(b"x")
+    graph_text, graph_blocking = preflight.report("graph")
+    assert graph_blocking is False and "Elliptic dataset" in graph_text
+
+
+def test_preflight_is_silent_when_everything_is_present(tmp_path, monkeypatch):
+    from serving import preflight
+    monkeypatch.setattr(preflight, "missing", lambda group=None: [])
+    assert preflight.report() == ("", False)

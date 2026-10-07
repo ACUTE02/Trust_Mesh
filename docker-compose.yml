@@ -70,8 +70,8 @@ services:
     build: ./frontend
     ports:
       - "127.0.0.1:8080:80"
-    depends_on:
-      - api
+    # No depends_on: the static site starts even when the API cannot (missing weights, still loading).
+    # Its desks then say that the scoring service did not answer.
 
 volumes:
   neo4j-data:

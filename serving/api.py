@@ -28,6 +28,12 @@ def create_app(graph=None, voice=None, neo4j=None, cases=None, load_on_startup=T
             from .neo4j_store import Neo4jStore
             from .voice_service import VoiceService
             state["cases"] = state["cases"] or CaseStore(config.CASES_DB)
+            from .preflight import report
+            text, blocking = report()
+            if text:
+                print(text, flush=True)
+            if blocking and (state["graph"] is None or state["voice"] is None):
+                raise SystemExit("TrustMesh API not started: required files are missing (listed above).")
             if state["graph"] is None:
                 state["graph"] = GraphService()
                 state["graph"].load()

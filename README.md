@@ -124,12 +124,28 @@ flowchart LR
 docker compose up --build        # Neo4j + loader + API + frontend
 ```
 
-First-time inputs that are not in the repository (all under `data/` or `artifacts/`, which are git-ignored):
+### Files you must supply
 
-1. Elliptic downloads itself through PyG on first start (about 700 MB).
-2. The XLS-R encoder: `data/models/wav2vec2-xls-r-300m/` (`config.json` + `pytorch_model.bin` from
-   `facebook/wav2vec2-xls-r-300m`, 1.27 GB). Without a local copy it is fetched from the Hub on first start.
-3. Model weights in `artifacts/graph/` and `artifacts/voice/` (from the Kaggle runs; see `docs/kaggle_setup.md`).
+A fresh clone holds the code, the specs, aggregate results and the site. It does **not** hold any dataset, any model
+weights or the speech encoder (licences and size). Checked on 2026-10-08 by cloning into an empty folder and starting
+the stack with no internet. Without these files the services stop and print this same list in plain words.
+
+| Put this file here | What it is | Where it comes from | Needed |
+|---|---|---|---|
+| `artifacts/graph/xgboost_tier1_tier2.json` | the graph scoring model | Kaggle notebook 01, Output panel (`docs/kaggle_setup.md`) | **required** |
+| `artifacts/graph/gat_weights.pt` | the graph explanation model | Kaggle notebook 01, Output panel | **required** |
+| `artifacts/voice/phase2c_D_ssl_mean_only_P1_s42.pt` | the voice model head (Model D) | Kaggle notebook 04, Output panel | **required** (or Model C's `phase2b_C_ssl_P1_s42.pt` as the fallback) |
+| `artifacts/voice/phase2c_test_scores.npz` | Model D's saved test scores, for the warning levels | Kaggle notebook 04, Output panel | optional; without it the levels are an explicitly labelled default |
+| `data/elliptic/raw/elliptic_txs_*.csv` (three files) | the Elliptic dataset | downloaded automatically on first start (about 700 MB); or from Kaggle `ellipticco/elliptic-data-set` | needs internet once |
+| `data/models/wav2vec2-xls-r-300m/config.json` and `pytorch_model.bin` | the speech encoder (1.27 GB) | downloaded automatically from Hugging Face on first start; or copy the two files from `facebook/wav2vec2-xls-r-300m` | needs internet once |
+| `artifacts/graph/results.json` | one result file the number check reads | Kaggle notebook 01, Output panel | only for `scripts/check_frontend_numbers.py` (it is kept out of git because it holds one transaction's prediction) |
+
+The `.pt` and `.npz` files are zip-format: if your download tool unpacks them into folders, the service cannot read them
+(see issue #44 in the project log). `artifacts/serving/*.json` (warning levels) is in the repository.
+
+What a first start looks like without them: `docker compose up` starts Neo4j; the `loader` prints the list above and
+stops; the API does not start; the site still opens on http://localhost:8080 and its three pages read normally, but
+each desk says the scoring service did not answer.
 
 Then: http://localhost:8080 (site), http://localhost:8000/docs (API), http://localhost:7474 (Neo4j browser, user
 `neo4j`, password from `NEO4J_PASSWORD`, default `trustmesh-demo` for the local stack only). Settings are in
