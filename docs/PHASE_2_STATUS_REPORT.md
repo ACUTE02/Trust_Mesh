@@ -101,3 +101,146 @@ three-way weighted average. `tests/test_serving.py`: 33 passed.
 Two small additive API fields were also added for the frontend (a deliberate, recorded exception to "keep the API
 untouched"): `/graph/score` returns the transaction's four graph statistics (`graph_features`), and `/voice/score`
 returns the trimmed silence (`lead_silence_s`, `trail_silence_s`). Nothing existing changed.
+
+## WP4 — React frontend (2026-10-08)
+
+- Built in the order the spec asks: the data module first (68 entries, each checked against its source by
+  `scripts/check_frontend_numbers.py`), then the two-scores instrument (0.7730 random, 0.5115 time split, difference
+  0.2616), then the pages, then the desks wired to the real API.
+- Streamlit is gone: `frontend/app.py` and `Dockerfile.frontend` deleted (both were created earlier in this project), the compose service replaced, README and docs updated. The site is on port 8080; 8501 is unused.
+- `npm run build` is clean: type check, 16 tests, production build. The tests include the build-time rule that a
+  rendered number must come from the data module or the live API, the instrument, the case card with empty fields,
+  and `ModelInUse` for a D response, a fallback-to-C response and a response with no model.
+- The frontend container runs in Docker Compose (nginx, 93 MB image, 13 MB of memory) and proxies `/api`.
+- **Clicked through in the browser against the real API, all done:**
+  1. Overview: instrument switched to the time split; the status table showed "Serving now: Voice model D
+     (phase2c_D_ssl_mean_only_P1_s42.pt)" read from `/health`.
+  2. Case desk, graph only: graph score shown, voice and combined rows read "empty", visual row dashed.
+  3. Case desk, combined: graph score, voice score from Model D, combined score, with the fixed
+     "no measured accuracy" note.
+  4. Voice desk: clip loaded, waveform and spectrogram drawn, scored, trimmed silence shaded, thresholds and model shown.
+  5. Graph desk: score, the four graph statistics, neighbourhood drawing and table from Neo4j, illicit-nearby list,
+     the secondary GAT explanation.
+  The clip in steps 3 and 4 was a synthetic tone made for the test and put into the page's file input by a script.
+  **Not done:** the microphone button, a real speech recording, the shortest-path form in the browser (the endpoint
+  itself passes in `verify_serving.py`), and the API-down state in a real browser (it is covered by the unit tests).
+- **Deployment profile verified** (the WP3 item that needed this image): with `docker-compose.deploy.yml`, host ports
+  7474, 7687 and 8000 refused connections, the site answered on the public port, a Neo4j-backed query worked through
+  `/api`, `/api/docs` returned 404, and a foreign origin got no CORS header. Tested with the existing volume's
+  password; a changed password on an existing volume was not tested.
+
+## WP5 — Critique and polish (2026-10-08)
+
+| Check | Result |
+|---|---|
+| Screenshots at 390, 768, 1440 px, both themes, three pages | 18 captured and reviewed |
+| Against the spec's "discarded" list | None of the discarded patterns present |
+| Generic defaults named and changed | The bordered theme-toggle button; the four-column tables that overflowed a phone |
+| One decorative element removed | The rule under the header |
+| Contrast, all pairs, both themes | Pass: 34 of 34 (`scripts/check_contrast.py`) |
+| No horizontal page scroll | Pass: 18 of 18 captures |
+| Keyboard operation of the instrument | Native radio group; unit-tested. **Not tabbed through by hand** |
+| Keyboard operation of the demos | Native controls. **Not verified by hand** |
+| Visible focus | In the stylesheet for every focusable element. **Not screenshotted** |
+| `prefers-reduced-motion` | Bar transition disabled in CSS. **Not verified with the OS setting on** |
+| Text or table equivalent for every chart | Yes (see `docs/design_decisions.md`) |
+| Screen reader | **Not tested** |
+| No dataset clip, per-sample prediction or weight in the saved screenshots | Pass: empty states only; `check_no_dataset_outputs.py` passes. One slip found and fixed first: the example menu named a transaction's dataset label |
+
+Screenshots are saved in `docs/frontend_screenshots/` (18 files, 8.8 MB).
+
+## WP6 — Demo documents and hosting analysis (2026-10-08)
+
+- `docs/demo_runsheet.md`: what must not be on screen, inputs to prepare, start and warm-up, the two-minute script,
+  hosting analysis, pre-deploy checklist, teardown checklist, and a list of the steps that were not tested.
+- Hosting, in one line: record from the local Docker stack (Option A). The stack needs about 4 GB of memory and
+  15 GB of disk, so free single-container web tiers cannot hold it; a 4 to 8 GB virtual machine, a tunnel from this
+  machine, or static hosting of the frontend alone can. **No provider page was read; every provider-specific limit
+  is marked unverified in the runsheet.**
+- README: results table, architecture diagram, one-command run, honest limits, datasets and citations from WP2,
+  one screenshot.
+- Could not test: whether a person who has never seen the project can follow the runsheet from a clean machine.
+  The start, warm-up, check and deployment-profile steps were run here; HTTPS, a real host, a tunnel and the
+  teardown commands on a remote host were not.
+
+## WP7 — Repository hygiene (2026-10-08)
+
+- `git init` in `TrustMesh_CODE` (branch `main`), five local commits, working tree clean, **no remote, nothing pushed**.
+- The pre-commit hook (`scripts/check_no_dataset_outputs.py`) is installed and was tested: a planted
+  `artifacts/voice/planted_test_weights.pt`, force-added, was refused with "FORBIDDEN ... model weights trained on a
+  dataset". The planted file was then removed. The check was extended to cover the Graph and Voice engines.
+- Excluded from git, and why:
+
+| Excluded | Why |
+|---|---|
+| `data/` (Elliptic, the encoder, demo clips, caches, `cases.sqlite`, backups) | Dataset files, dataset audio, per-sample predictions |
+| `artifacts/**/*.pt`, `artifacts/graph/*xgboost*.json` | Trained weights (Elliptic is CC BY-NC-ND; publishing weights is an open owner decision) |
+| `artifacts/**/*.npz`, the extracted `phase2c_*` folders, `_to_delete/` | Per-sample test scores and extracted weights |
+| `artifacts/graph/results.json`, `results_phase1c_partial.json` | They hold one transaction's prediction and explanation example. **Consequence:** on a fresh clone `scripts/check_frontend_numbers.py` cannot check the entries sourced from that file. The owner may decide to commit it |
+| `*.wav`, `*.flac`, `*.mp3`, `*.ogg`, `*.sqlite` | Audio clips; the cases table |
+| `.env` (not `.env.example`) | Local settings and secrets |
+| `node_modules/`, `frontend/dist/`, `.venv/` | Installed packages and build output |
+
+- Committed on purpose: aggregate results (`results_phase1d.json`, the voice result files, threshold files, plots),
+  code, specs, docs and the 18 empty-state screenshots. The notebooks have no cell outputs.
+- For the owner to review before any push: `project.md` (the stale log) is committed as it stands; the commits use
+  the name and email from the owner's account as the author.
+
+## WP8 — Final verification (2026-10-08)
+
+| Check | Result |
+|---|---|
+| Python unit tests (`pytest tests`) | 108 passed |
+| Serving tests alone | 33 passed |
+| Frontend tests (inside `npm run build`) | 16 passed; build clean |
+| `pyflakes serving scripts tests/test_serving.py` | clean |
+| `scripts/build_notebooks.py --check` | up to date |
+| `scripts/verify_serving.py` against the Docker stack with the new frontend container | 11 of 11 ok, exit 0 |
+| Start from an empty Neo4j volume in Docker (separate compose project) | Loader filled 203,769 nodes and 234,355 edges in 113 s; verify 11 of 11 |
+| Every number on the three pages against its source | 68 of 68 match (`scripts/check_frontend_numbers.py`), and the page tests confirm no other number is rendered |
+| `scripts/check_no_dataset_outputs.py --all` | 138 tracked files, none forbidden |
+| Start from a clean machine (empty `data/`) | **Not done.** Re-downloading Elliptic and the 1.27 GB encoder was impractical on this connection (the encoder took about an hour earlier) |
+
+Known failure left as found: none. Known mismatch left open: issue #45 (two runs disagree on the GAT-tuned and GIN
+figures; the site shows the log's and says so).
+
+## WP9 — Hand-off (2026-10-08)
+
+**Files changed or added in this run** (all inside `TrustMesh_CODE` unless a full path is given):
+- Added: `frontend/` (React site, replacing the Streamlit file), `docker-compose.deploy.yml`, `.env.example`,
+  `docs/PHASE_2_STATUS_REPORT.md`, `docs/demo_runsheet.md`, `docs/frontend_screenshots/` (18 images),
+  `scripts/check_frontend_numbers.py`, `scripts/check_contrast.py`, `scripts/capture_screenshots.py`, the `.git` folder.
+- Changed: `serving/api.py`, `serving/config.py`, `serving/fusion.py`, `serving/graph_service.py`,
+  `serving/voice_service.py`, `tests/test_serving.py`, `scripts/calibrate_voice_thresholds.py` (docstring),
+  `scripts/check_no_dataset_outputs.py`, `scripts/verify_serving.py` (lists all clips), `docker-compose.yml`,
+  `.gitignore`, `requirements-dev.txt`, `README.md`, `docs/design_decisions.md`, and `E:\TrustMesh\PROJECT_LOG.md`.
+- Deleted: `frontend/app.py`, `Dockerfile.frontend` (the Streamlit page and its image).
+- Local state changed: `data/cases.sqlite` (test rows removed; backup in `data/backups/`), Docker images rebuilt.
+- Not touched: `project.md`, any Visual Engine code, any model, the extracted folders and `_to_delete/` in
+  `artifacts/voice/`.
+
+**Memory table:** see WP0. In short: API about 2.1 GB, Neo4j up to 1.4 GB, frontend 13 MB.
+
+**Terms findings that need an owner decision:** the three Elliptic questions under WP2.
+
+**Open and unverified items:**
+1. Clean-machine start not tested.
+2. No real deployment, HTTPS, tunnel or static-only hosting tested; provider limits unverified.
+3. Microphone recording and real speech through the new frontend not tested.
+4. Keyboard-only use, screen reader and reduced motion not verified in a live browser.
+5. Issue #45: which run's GAT-tuned and GIN figures are canonical.
+6. `artifacts/graph/results.json` is kept out of git; the number check is therefore complete only on this machine.
+7. The terms of the VCTK corpus behind ASVspoof were not read.
+8. `verify_serving.py` writes test rows into the cases table each time it runs.
+
+**Owner-only list, with exact next steps:**
+1. **Decide the Elliptic questions** (`docs/design_decisions.md`, "Terms findings"). Until then keep real
+   transaction scores out of anything public.
+2. **Record the video** from the local stack: `docs/demo_runsheet.md`, sections 1 to 4. Record your own voice clips first.
+3. **Hosting:** choose Option A (no hosting) or one of the options in the runsheet's section 5; if you deploy, follow
+   sections 6 and 7 and keep Neo4j's ports closed.
+4. **Review, then push:** in `TrustMesh_CODE` run `git log --stat` and `git ls-files`, check nothing listed should
+   stay private, add your remote and push. Nothing has been pushed.
+5. **Spec defaults** you may overrule: the combined case desk is on the landing page; no email or phone is shown.
+6. **Sync the second log copy** (`project.md` is stale and was left alone, as instructed).
+7. Anything on Kaggle, including a seeded re-run if you want issue #45 settled.
