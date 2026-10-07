@@ -1,0 +1,145 @@
+@import "tailwindcss";
+@import "@fontsource-variable/schibsted-grotesk/wght.css";
+@import "@fontsource-variable/martian-mono/wght.css";
+
+/* Tokens. Light is the base; dark is the same system re-toned, not a different look.
+   Marker yellow is only ever a fill behind Graphite text (--marker-ink), in both themes. */
+:root {
+  --slab: #dce0db;
+  --sheet: #eef0ec;
+  --ink: #2a2f2d;
+  --ink-soft: #4a524e;
+  --rule: #b4bab4;
+  --marker: #f5c400;
+  --marker-ink: #2a2f2d;
+  --ledger: #0b6b63;
+  --spectrum: #6e2a5e;
+  --flag: #a63d2b;
+  --track: #c9cec8;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --slab: #1c2220;
+  --sheet: #262e2b;
+  --ink: #e3e6e1;
+  --ink-soft: #b3bab4;
+  --rule: #4c5651;
+  --marker: #f5c400;
+  --marker-ink: #2a2f2d;
+  --ledger: #3fb3a8;
+  --spectrum: #c77bb4;
+  --flag: #e0745f;
+  --track: #39423e;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-slab: var(--slab);
+  --color-sheet: var(--sheet);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-rule: var(--rule);
+  --color-marker: var(--marker);
+  --color-marker-ink: var(--marker-ink);
+  --color-ledger: var(--ledger);
+  --color-spectrum: var(--spectrum);
+  --color-flag: var(--flag);
+  --color-track: var(--track);
+  --font-sans: "Schibsted Grotesk Variable", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Martian Mono Variable", ui-monospace, "Cascadia Mono", monospace;
+  /* Five sizes, ratio 1.25 from 15px, plus the two large sizes used once each. */
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.3125rem;
+  --text-xl: 1.625rem;
+  --text-hero: clamp(1.9rem, 1.2rem + 2.6vw, 3.1rem);
+  --text-readout: clamp(2.6rem, 1.6rem + 4vw, 4.4rem);
+  --radius-sm: 2px;
+}
+
+html { background: var(--slab); }
+body {
+  margin: 0;
+  background: var(--slab);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.55;
+  font-variant-numeric: lining-nums;
+  -webkit-font-smoothing: antialiased;
+}
+.num { white-space: nowrap; }
+.tn { font-variant-numeric: tabular-nums lining-nums; }
+.measure { max-width: 68ch; }
+h1, h2, h3 { font-weight: 600; line-height: 1.15; letter-spacing: -0.01em; margin: 0; }
+a { color: inherit; text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; border-radius: 2px; }
+button, input, select { font: inherit; color: inherit; }
+
+/* Provenance marker: the one distinctive shape (a tag with a clipped corner). */
+.marker {
+  display: inline-block;
+  background: var(--marker);
+  color: var(--marker-ink);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.38rem 0.6rem 0.38rem 0.45rem;
+  border: 0;
+  cursor: pointer;
+  clip-path: polygon(0 0, calc(100% - 0.5rem) 0, 100% 0.5rem, 100% 100%, 0 100%);
+}
+
+/* Pattern language. Each is also named in text wherever it is used. */
+.fill-ledger { background: var(--ledger); }
+.fill-spectrum { background: var(--spectrum); }
+.fill-shortcut {
+  background-color: transparent;
+  background-image: repeating-linear-gradient(135deg, var(--flag) 0 2px, transparent 2px 6px);
+  outline: 1.5px solid var(--flag);
+  outline-offset: -1.5px;
+}
+.planned { border: 1.5px dashed var(--ink-soft); background: transparent; }
+.bracket { border: 1.5px solid var(--ink); border-top: 0; border-bottom: 0; height: 0.8rem; position: relative; }
+.bracket::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1.5px solid var(--ink); }
+
+.rule-t { border-top: 1px solid var(--rule); }
+.rule-b { border-bottom: 1px solid var(--rule); }
+
+.btn {
+  background: var(--ink);
+  color: var(--slab);
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+  padding: 0.5rem 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-quiet { background: transparent; color: var(--ink); }
+.field {
+  background: var(--sheet);
+  border: 1.5px solid var(--ink-soft);
+  border-radius: 2px;
+  padding: 0.45rem 0.6rem;
+}
+
+.bar-anim { transition: width 700ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .bar-anim { transition: none; }
+  * { scroll-behavior: auto !important; }
+}
+
+/* Wide registers become stacked rows on a phone: each cell on its own line, labelled. */
+@media (max-width: 640px) {
+  table.stack-sm, .stack-sm tbody, .stack-sm tr, .stack-sm th, .stack-sm td { display: block; width: auto !important; }
+  .stack-sm thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .stack-sm tr { padding: 0.75rem 0; }
+  .stack-sm th, .stack-sm td { padding: 0.15rem 0 !important; }
+  .stack-sm td[data-label]::before { content: attr(data-label) ": "; color: var(--ink-soft); font-size: 0.8125rem; }
+}
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
