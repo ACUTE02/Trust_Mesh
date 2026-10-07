@@ -1,0 +1,6 @@
+{
+  "high": 0.5785728096961975,
+  "medium": 0.03590139374136925,
+  "rule": "high = flags 1% and medium = flags 10% of known-licit validation-period (steps 31-35) nodes",
+  "n_val_licit": 3640
+}

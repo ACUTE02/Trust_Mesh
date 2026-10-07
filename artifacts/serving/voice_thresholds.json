@@ -1,0 +1,12 @@
+{
+  "C": {
+    "high": 0.8910259252452738,
+    "medium": 0.08054406705799792,
+    "source": "phase2b_test_scores.npz [C_ssl_P1_s42]: high flags 1%, medium flags 10% of 2165 bonafide in-domain test clips"
+  },
+  "D": {
+    "high": 0.6578478950320129,
+    "medium": 0.02388159133520282,
+    "source": "phase2c_test_scores.npz [D_ssl_mean_only_P1_s42]: high flags 1%, medium flags 10% of 2165 bonafide in-domain test clips"
+  }
+}
