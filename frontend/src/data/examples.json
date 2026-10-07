@@ -1,0 +1,9 @@
+{
+  "_note": "Example transactions for the case desks. These are row indices into the Elliptic graph (identifiers, not results); the scores shown for them are computed live by the API and are never stored in this repository.",
+  "transactions": [
+    {"id": 154134, "label": "Transaction 154134"},
+    {"id": 146797, "label": "Transaction 146797"},
+    {"id": 151474, "label": "Transaction 151474"}
+  ],
+  "maxId": 203768
+}

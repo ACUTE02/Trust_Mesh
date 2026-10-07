@@ -1,0 +1,30 @@
+{
+  "_note": "Licence and citation as found on each official page on 2026-10-08 (docs/design_decisions.md, 'Terms findings'). Not legal advice.",
+  "datasets": [
+    {
+      "name": "Elliptic Data Set",
+      "usedFor": "Graph Engine: training and evaluation",
+      "licence": "CC BY-NC-ND 4.0",
+      "citation": "M. Weber, G. Domeniconi, J. Chen, D. K. I. Weidele, C. Bellei, T. Robinson, C. E. Leiserson. Anti-Money Laundering in Bitcoin: Experimenting with Graph Convolutional Networks for Financial Forensics. KDD '19 Workshop on Anomaly Detection in Finance, August 2019. Data: Elliptic, www.elliptic.co.",
+      "link": "https://www.kaggle.com/datasets/ellipticco/elliptic-data-set"
+    },
+    {
+      "name": "ASVspoof 2019, logical access (LA), evaluation partition",
+      "usedFor": "Voice Engine: training and evaluation, on the project's own speaker-disjoint split",
+      "licence": "Open Data Commons Attribution License (ODC-By)",
+      "citation": "J. Yamagishi, M. Todisco, M. Sahidullah, H. Delgado, X. Wang, N. Evans, T. Kinnunen, K. A. Lee, V. Vestman, A. Nautsch. ASVspoof 2019. University of Edinburgh, The Centre for Speech Technology Research, 2019. doi:10.7488/ds/2555.",
+      "link": "https://datashare.ed.ac.uk/handle/10283/3336"
+    },
+    {
+      "name": "In-the-Wild",
+      "usedFor": "Voice Engine: out-of-domain test only",
+      "licence": "Apache License 2.0",
+      "citation": "N. M. Müller, P. Czempin, F. Dieckmann, A. Froghyar, K. Böttinger. Does Audio Deepfake Detection Generalize? Interspeech 2022.",
+      "link": "https://deepfake-total.com/in_the_wild"
+    }
+  ],
+  "fonts": [
+    {"name": "Schibsted Grotesk", "licence": "SIL Open Font License 1.1", "link": "https://github.com/schibsted/schibsted-grotesk"},
+    {"name": "Martian Mono", "licence": "SIL Open Font License 1.1", "link": "https://github.com/evilmartians/mono"}
+  ]
+}

@@ -2,7 +2,7 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-data/
+/data/
 
 # --- Dataset-derived outputs: never in a public repository -------------------------------------
 # The image datasets are non-commercial / no-redistribution (docs/PHASE_3_VISUAL_ENGINE.md, 12a).
