@@ -352,3 +352,157 @@ API per request and the frontend no longer waits for the API; the instrument no 
 
 **Not run:** the voice half of ST2; a first start with real downloads; real speech through the microphone; screen
 readers; a real phone; the shortest-path box by keyboard and in recording mode; anything needing training.
+
+## Why do genuine phone recordings score as fake? (2026-10-08)
+
+Question from the owner after the self-test: all 3 genuine voice-memo recordings were flagged as fake, while the
+In-the-Wild check gave an error rate of 0.0800. Script: `scripts/diagnose_phone_audio.py`. This was a diagnosis only:
+no training, no model change, no threshold change, nothing pushed or deployed.
+
+**Every number below is a total or an average.** The owner's recordings are 3 genuine clips and 3 clones; the
+research-dataset clips are the 4 genuine and 4 fake clips already on this machine. These are very small samples. They
+show which factors matter in these clips. They do not measure how often the model fails.
+
+The scoring in this test used the same code and weights as the service. It reproduced the service's score for a clip
+exactly (difference 0), so this is not a bug in the service.
+
+### What the owner's recordings are
+
+- The 3 genuine recordings are voice-memo files: AAC at 32 kb/s, already 16 kHz, mono. The 3 clones are MP3 at
+  128 kb/s, 44.1 kHz.
+- They are 7 to 10 seconds long (average 8.7 s genuine, 7.7 s clones). The research clips are about 3 seconds.
+
+### Check 1: level, rate, length and trimming
+
+| | Owner, genuine (3) | Owner, clones (3) | Dataset, genuine (4) | Dataset, fake (4) |
+|---|---|---|---|---|
+| Loudest point (dBFS) | -8.3 | -5.8 | 0.0 | 0.0 |
+| Average level of the speech (dBFS) | -29.3 | -25.2 | -16.5 | -16.9 |
+| Quietest background (dBFS) | -67.2 | -51.9 | -61.4 | -58.3 |
+| Average length (s) | 8.7 | 7.7 | 3.1 | 2.7 |
+| Length after trimming silence (s) | 7.6 | 7.3 | 1.7 | 1.8 |
+| Share of the sound energy kept by trimming | 99.99% | 100% | 100% | 100% |
+| Share of the energy above 4 kHz | 0.2% | 0.2% | 1.6% | 1.5% |
+
+- **Trimming did not remove the speech.** It cut about 13% of the time, mostly silence, and kept 99.99% of the sound.
+- The owner's genuine recordings are quieter than the research clips (about 12 dB lower on average), and have very
+  little energy above 4 kHz. That is normal for a 32 kb/s voice memo.
+- Their background is quiet, not noisy.
+
+### Check 2: the genuine recordings in several versions
+
+| Version of the 3 genuine recordings | Flagged high | Passed as low risk | Average raw score* |
+|---|---|---|---|
+| Straight resample to 16 kHz (the normal route) | 3 | 0 | -10.5 |
+| Resampled the way the service does it (simple interpolation) | 3 | 0 | -10.5 |
+| Made as loud as possible without clipping (peak -1 dBFS) | 3 | 0 | -10.4 |
+| Set to the average level of the research clips | 3 | 0 | -10.6 |
+| Trimmed more strictly (20 dB) | 3 | 0 | -9.2 |
+| Trimmed less strictly (40, 50, 60 dB) | 3 | 0 | -10.8, -10.9, -10.3 |
+| No trimming, first 4 seconds | 3 | 0 | -10.1 |
+| No trimming, middle 4 seconds | 3 | 0 | -9.8 |
+
+*The raw score is the number the model produces before it is turned into a 0-to-1 score. Higher means more genuine.
+Genuine research clips average about +8 on this scale. Fake research clips average about -14.
+
+- **Nothing in this table changes the outcome.** Level, trimming, and how the clip is resampled are not the cause.
+  The model normalises loudness itself, so the level test was expected to change nothing, and on the research clips
+  it changed the raw score by at most 0.2.
+- The owner's genuine recordings were already 16 kHz, so there was no real resampling to go wrong.
+- The 3 clones scored lower (more fake) than their genuine twins in all 3 pairs, by about 4.6 on the raw scale. So the
+  model did see some difference. But both sit far below the warning level.
+
+### Check 3: the site's own microphone path
+
+The browser's microphone cannot be used in an unattended test. Instead the browser's fake microphone played the owner's
+genuine recording, and the site recorded it, converted it, and sent it, exactly as it does for a real microphone.
+All 3 came out as "high risk" (average raw score -11.5, against -10.5 for the straight route). The 3 genuine recordings
+and the 3 clones, uploaded as files through the site, were all flagged high too (6 of 6). The browser route differs from
+the straight route by about 1 point on the raw scale. So **the site's recording and conversion is not the cause.**
+This is not real speech in a real room: it is the real recording played into the browser.
+
+### Check 4: what do codecs, noise, level and rooms do to genuine research clips?
+
+The 4 genuine and 4 fake research clips were damaged one way at a time and scored again. Counts are out of 4.
+
+| What was done to the genuine clips | Stayed "low risk" | Became "medium" | Became "high" | Average raw score |
+|---|---|---|---|---|
+| Nothing (the original clips) | 4 | 0 | 0 | +7.8 |
+| Resampled through 48 kHz and back, no codec | 3 | 1 | 0 | +6.1 |
+| MP3 128 kb/s | 2 | 2 | 0 | +3.7 |
+| AAC 128 kb/s | 4 | 0 | 0 | +7.1 |
+| **AAC 32 kb/s (voice-memo quality)** | **1** | 1 | **2** | -1.8 |
+| AAC 32 kb/s, after a 48 kHz step like a phone | 0 | 0 | 4 | -6.3 |
+| Opus 64 kb/s | 3 | 1 | 0 | +6.4 |
+| Opus 24 kb/s | 2 | 2 | 0 | +3.8 |
+| Quieter by 20 / 40 / 60 dB | 4 / 3 / 2 | 0 / 1 / 2 | 0 | +8.0 / +7.1 / +4.6 |
+| Louder by 12 dB, clipped | 3 | 1 | 0 | +4.7 |
+| White noise (30 / 20 / 10 dB signal-to-noise) | 4 each | 0 | 0 | +8.8 / +10.3 / +8.2 |
+| **Room echo (reverb, 0.4 s)** | **0** | 0 | **4** | -15.9 |
+
+- **The fake clips stayed "high risk" in nearly every case** (at most 1 of 4 slipped, under heavy white noise).
+  Whatever damages a clip pushes the model towards "fake". It almost never pushes a fake towards "genuine".
+- **Heavy compression matters.** At voice-memo quality (AAC 32 kb/s), only 1 of 4 genuine research clips stayed low
+  risk. At 128 kb/s, 4 of 4 did. Low bitrates and extra resampling steps both hurt.
+- **Room echo hurt most.** With a simple simulated room echo, none of the 4 genuine clips passed, and their average
+  raw score fell to -15.9, as low as a typical fake.
+- **Background noise did not hurt** genuine clips. Level only hurt at extreme quietness.
+- The model is brittle even with no codec: a plain trip through 48 kHz and back moved 1 clip of 4 out of "low".
+
+### Check 5: how different are the owner's recordings, overall?
+
+- On the raw scale, the owner's genuine recordings average -10.5 (range -12.4 to -7.8). Genuine clips in the research
+  test set (2,165 of them) mostly sit between +2 and +13. **None of them** looked less genuine than the owner's
+  recordings. About 25% of the research test set's fake clips (8,992) looked less fake than the owner's genuine ones.
+- The owner's clones average -15.1, close to the typical research fake (-14.5).
+- Inside the model, the owner's genuine recordings and the owner's clones look as similar to each other (average
+  similarity 0.979) as the genuine recordings look to one another (0.979). That is more than genuine research clips look
+  to one another (0.971). So the model mostly sees "this speaker, this recording" and much less "real or cloned".
+- Seen from the middle of the research genuine clips, and from the middle of the research fake clips, both of the
+  owner's groups sit slightly nearer the fake side (3 of 3 each). This is only 3 clips against 4, and the differences
+  are small. It is a hint, not a result.
+- The research clips that were damaged with AAC stayed nearer the genuine side in this view (0 of 4 nearer the fake
+  side), even though the model flagged many of them. So this view does not explain the model's decision. It only
+  describes how different the recordings are.
+
+### So what explains the failure?
+
+**Ruled out** (tested, and the failure stays the same): loudness, trimming, resampling, background noise level,
+clipping, and the site's browser path. It is also not a bug in the service.
+
+**Shown to hurt genuine speech, on research clips:** heavy compression (AAC at 32 kb/s, the voice-memo setting) and
+room echo. Both push genuine clips towards "fake" and neither pushes fake clips towards "genuine".
+
+**Not established:**
+- **Which of these, or what else, causes the owner's result.** Heavy AAC compression on research clips brought the
+  average raw score from +7.8 to -1.8. The owner's recordings average -10.5. So compression alone, as tested here,
+  explains **only part** of the gap. Room echo, the phone's microphone, and the speaker (a different voice and accent
+  from the research recordings) are all untested for the owner's voice, and could explain the rest. The owner's
+  recordings only exist in compressed form, so these cannot be told apart from the files we have.
+- **How the In-the-Wild result fits.** The error rate of 0.0800 is the error at the best warning level for that test
+  set, not at the warning levels the site uses. It tells us the model ranks fakes below genuine clips fairly well on
+  that set. It does not tell us how many of its genuine clips would be flagged at the site's levels. The In-the-Wild
+  audio is not on this machine, so that was not checked. The owner's pairs also ranked the clone below the real
+  recording in 3 of 3 cases, so a ranking signal exists here too. That is a hint from 3 pairs, not a result.
+
+**Warning levels were not changed**, as asked. Changing them would hide this problem, not explain it.
+
+### What would settle it (needs the owner, not training)
+
+Record the same sentences once in a **lossless** mode (a recorder app set to WAV), once close to the microphone in a
+quiet small room, and once in an echoey room. Compress the quiet WAV to AAC at 32 kb/s ourselves. Then the same script
+can separate compression, room, and microphone/speaker, with the same speaker each time.
+
+### Not run
+
+- Real microphone and real room: the browser test used a fake microphone playing the recording.
+- An uncompressed recording of the owner's voice: none exists, so compression could not be separated from the room,
+  the phone, and the speaker.
+- In-the-Wild audio: not on this machine, not downloaded.
+- More research clips: only the 4 genuine and 4 fake clips on this machine were used. Each count above is out of 4 or
+  out of 3. A larger sample could change the picture.
+- Other speakers, other phones, other recording apps.
+- Anything that needs training, such as training with compressed audio (the unrun Model F idea).
+
+Per-clip detail stays in `E:\TrustMesh\my_voice_tests\PHONE_AUDIO_DIAGNOSIS_PRIVATE.json` and the `_diagnosis` folder
+next to the recordings (outside the repository). Totals are in `data/self_test/phone_audio.json` (git-ignored).

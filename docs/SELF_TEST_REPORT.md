@@ -141,7 +141,9 @@ from the clone. Catching 3 of 3 fakes means nothing when it also flags 3 of 3 re
 **This is a small demo check, not an accuracy measurement.** Three pairs from one person on one phone cannot give a
 rate. But it is a clear warning sign, and it agrees with the next test.
 
-**Why this probably happens.** We took 4 genuine recordings from the research dataset, which the model passes
+**Why this happens: a follow-up test is in `docs/PHASE_2_STATUS_REPORT.md` ("Why do genuine phone recordings score as fake?").** It found that compression alone does not explain the whole result. The first diagnostic was:
+
+We took 4 genuine recordings from the research dataset, which the model passes
 correctly. We squeezed them the way a phone voice memo is squeezed (AAC, low bitrate) and scored them again. Only 1
 of 4 still passed; 1 became "medium" and 2 became "high". So this kind of compression alone can make a genuine
 voice look fake to this model. Four recordings is a small check too, but both checks point the same way: the model
