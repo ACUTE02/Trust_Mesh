@@ -506,3 +506,65 @@ can separate compression, room, and microphone/speaker, with the same speaker ea
 
 Per-clip detail stays in `E:\TrustMesh\my_voice_tests\PHONE_AUDIO_DIAGNOSIS_PRIVATE.json` and the `_diagnosis` folder
 next to the recordings (outside the repository). Totals are in `data/self_test/phone_audio.json` (git-ignored).
+
+## Compression test on another speaker's clean recordings (2026-10-13)
+
+Follow-up to the phone-audio diagnosis above. Script: `scripts/diagnose_other_speaker.py`, which uses the same
+in-process scoring as `scripts/diagnose_phone_audio.py` (the service's own code and weights). Diagnosis only: no
+training, and no change to the model, the warning levels or the served code.
+
+**The clips.** Five lossless (FLAC, 16 kHz) recordings of one speaker, supplied by the owner: LibriSpeech dev-clean,
+speaker 84, utterances 84-121123-0021 to 0025. LibriSpeech is by V. Panayotov, G. Chen, D. Povey and S. Khudanpur
+("LibriSpeech: an ASR corpus based on public domain audio books", ICASSP 2015), licensed CC BY 4.0. The audio files
+are not in this repository, and neither are the re-encoded copies (they were written to a temporary folder outside it).
+
+| Clip | Length (s) | Sound left after trimming silence (s) | Note |
+|---|---|---|---|
+| 84-121123-0021 | 4.82 | 4.25 | |
+| 84-121123-0022 | 2.61 | 2.10 | **under 4 seconds** |
+| 84-121123-0023 | 4.68 | 4.21 | |
+| 84-121123-0024 | 10.38 | 9.73 | |
+| 84-121123-0025 | 6.25 | 5.55 | |
+
+One clip is under 4 seconds. The model always listens to 4 seconds, so a shorter clip is repeated to fill the gap.
+That is how the research clips were handled in training too, but treat that clip's result with extra care.
+
+**What was scored.** Each clip as it is, and three compressed copies of it. All counts are out of 5.
+
+| Version | Passed as "low risk" | "Medium" | "High" | Average raw score* | Average fall from the original |
+|---|---|---|---|---|---|
+| As it is (lossless) | 5 | 0 | 0 | +8.7 | |
+| AAC 32 kb/s (voice-memo quality) | 2 | 2 | 1 | +1.4 | 7.3 |
+| AAC 32 kb/s after a 48 kHz step, like a phone | 0 | 0 | 5 | -6.8 | 15.5 |
+| MP3 128 kb/s | 1 | 3 | 1 | +1.5 | 7.2 |
+
+*The raw score is the model's number before it becomes a 0-to-1 score. Higher means more genuine. Genuine research
+clips average about +8; fake research clips about -14.
+
+**What this shows, and on how many clips each point rests.**
+- **The model passes this speaker's clean recordings.** 5 of 5 lossless clips were "low risk", with an average raw
+  score of +8.7, about the same as genuine research clips. So the model is not simply rejecting every voice from
+  outside its training data. (5 clips, one speaker.)
+- **Compression alone is enough to make genuine speech look suspicious.** Every one of the 5 clips scored lower after
+  every kind of compression tried (5 of 5, three times). At voice-memo quality only 2 of 5 still passed. With the extra
+  48 kHz step, 0 of 5 passed and all 5 were flagged "high". (5 clips, one speaker.)
+- **MP3 at 128 kb/s also hurt:** 1 of 5 still passed. That is worse than on the 4 research clips in the earlier test,
+  where 2 of 4 passed. Both samples are tiny, so this difference may be chance. (5 clips here, 4 there.)
+- **It agrees with the earlier test on research clips.** There, AAC at 32 kb/s left 1 of 4 passing (average raw score
+  -1.8) and the 48 kHz version left 0 of 4 (-6.3). Here it is 2 of 5 (+1.4) and 0 of 5 (-6.8). Two different sources of
+  clean speech, the same direction, similar size. Together that is 9 genuine clips from at least two speakers.
+
+**What it does not show.**
+- **It cannot tell whether the owner's own voice or microphone is a factor.** This is someone else's voice, recorded
+  on other equipment. The owner's genuine recordings average -10.5 on the raw scale. Voice-memo compression brought
+  this speaker to +1.4, and to -6.8 with the 48 kHz step. So compression can account for a large part of the gap, and
+  with a 48 kHz step most of it, but whether the owner's phone takes that route, and what the room, the microphone and
+  the voice add, is still not established.
+- **The source is not pristine.** LibriSpeech was cut from LibriVox audiobook recordings that were distributed as MP3
+  files. So these "lossless" clips have already been through MP3 compression once, at a higher quality. The model still
+  passed all 5, which says that light compression in the past does not by itself cause a failure.
+- **It is one speaker and 5 clips.** It is not a rate. A different speaker could behave differently.
+- **Nothing here measures accuracy on phone audio.** That needs many genuine phone recordings from many people.
+
+**Not run:** other speakers; more clips; other bitrates and codecs; room echo on these clips; anything with the owner's
+own voice (the lossless recordings suggested earlier still do not exist); anything needing training.
