@@ -49,6 +49,19 @@ export interface Neighbour {
   verdict: Verdict;
 }
 
+/** What the service's audio guard measured (serving/audio_guard.py). */
+export interface AudioQuality {
+  analysed: boolean;
+  loud_frames: number;
+  speech_like: boolean;
+  low_quality_audio: boolean;
+  reasons: string[];
+  spectral_movement: number;
+  hf_to_mid_db: number | null;
+  cutoff_hz: number | null;
+  thresholds: { spectral_movement_min: number; hf_to_mid_min_db: number; cutoff_min_hz: number };
+}
+
 export interface VoiceScore {
   clip: string;
   score: number;
@@ -64,6 +77,8 @@ export interface VoiceScore {
   scored_seconds?: number;
   low_confidence?: boolean;
   warnings?: string[];
+  low_quality_audio?: boolean;
+  audio_quality?: AudioQuality | null;
 }
 
 export interface CaseScore {

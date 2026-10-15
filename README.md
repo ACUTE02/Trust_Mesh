@@ -121,7 +121,12 @@ flowchart LR
 - Eight local test clips were scored correctly during verification. That is a plumbing check, not an accuracy result.
 - **The voice model does not cope with ordinary phone recordings.** In a small self-test, three genuine phone recordings
   were all flagged as fake, and genuine research recordings mostly stopped passing once compressed like a voice memo.
-  The reported error rate holds for the research test set only. See `docs/SELF_TEST_REPORT.md`.
+  The reported error rate holds for the research test set only. See `docs/SELF_TEST_REPORT.md`. Compressed phone audio
+  is a known weakness of the voice model.
+- Two rough checks run before the voice model: a sound that is not speech is refused, and audio that looks
+  phone-quality or band-limited gets a warning that the result is unreliable. Neither changes the score. They are
+  heuristics fixed from a handful of clips, not validated detectors, and they miss some compressed audio (see
+  `docs/design_decisions.md`, "Audio-quality guard").
 - One dataset per engine. Nothing here says the findings transfer to other transaction graphs or other speech corpora
   beyond the small In-the-Wild check.
 

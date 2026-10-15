@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
-from . import config
+from . import audio_guard, config
 from .cases import CaseStore
 from .fusion import fuse
 
@@ -141,6 +141,8 @@ def create_app(graph=None, voice=None, neo4j=None, cases=None, load_on_startup=T
             return voice_svc().score_bytes(blob, model)
         except KeyError as exc:
             raise HTTPException(422, str(exc.args[0]))
+        except audio_guard.NotSpeechError as exc:  # already a full sentence
+            raise HTTPException(422, str(exc))
         except (ValueError, RuntimeError) as exc:  # undecodable / too-short audio
             raise HTTPException(422, f"Could not score this audio: {exc}.")
 

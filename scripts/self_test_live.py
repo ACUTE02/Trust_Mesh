@@ -79,7 +79,6 @@ def main():
 
     is_error = lambda code: (lambda r, b: r.status_code == code and isinstance(b, dict) and bool(b.get("detail")))  # noqa: E731
     flagged = lambda r, b: r.status_code == 422 or (r.status_code == 200 and b.get("low_confidence") is True and b.get("warnings"))  # noqa: E731
-    scored = lambda r, b: r.status_code == 200 and 0 <= b.get("score", -1) <= 1  # noqa: E731
 
     record("transaction number that does not exist", requests.get(f"{api}/graph/score/999999", timeout=30), is_error(404))
     record("transaction number that is not a number", requests.get(f"{api}/graph/score/abc", timeout=30),
@@ -90,10 +89,11 @@ def main():
     record("file over 10 MB", post(wav(tone(350))), is_error(413))
     record("0.1-second clip", post(wav(tone(0.1))), flagged)
     record("pure silence, 3 seconds", post(wav(np.zeros(3 * SR))), flagged)
-    record("loud white noise, 3 seconds", post(wav(np.clip(rng.normal(0, 0.5, 3 * SR), -1, 1))), scored,
-           "The service has no check that a sound is speech. Noise gets an ordinary score.")
-    record("synthetic tone, 3 seconds", post(wav(tone(3))), scored,
-           "Not speech. It gets an ordinary score.")
+    not_speech = lambda r, b: r.status_code == 422 and "does not look like speech" in str(b.get("detail", ""))  # noqa: E731
+    record("loud white noise, 3 seconds", post(wav(np.clip(rng.normal(0, 0.5, 3 * SR), -1, 1))), not_speech,
+           "Refused as not speech (the audio guard, added 2026-10-15). Before it, noise got an ordinary score.")
+    record("synthetic tone, 3 seconds", post(wav(tone(3))), not_speech,
+           "Refused as not speech (the audio guard). Before it, a tone got an ordinary score.")
 
     if not args.skip_rate_limit:
         # Sent at once, not one after another: one scoring call takes over a second on a CPU, so a single
@@ -103,7 +103,7 @@ def main():
         blob = wav(tone(1.5))
         with ThreadPoolExecutor(40) as pool:
             codes = list(pool.map(lambda _: post(blob).status_code, range(40)))
-        refused, served = codes.count(429), codes.count(200)
+        refused, served = codes.count(429), len(codes) - codes.count(429)  # a tone is now a 422, not a 200
         ok = refused == 10 and served == 30
         cases.append({"case": "40 scoring requests sent at once (limit is 30 a minute)", "status": 429 if refused else 200,
                       "answer": f"{served} scored, {refused} refused with a 'too many requests' message",

@@ -1095,6 +1095,67 @@ The saved screenshots are the pages' empty states: aggregate results, no scored 
 `scripts/check_no_dataset_outputs.py` passes on them. The transaction row numbers in the example menu are identifiers,
 not dataset content. Screens of a scored case are not saved anywhere in the repository.
 
+### Audio-quality guard (2026-10-15)
+
+Two checks run before the voice model (`serving/audio_guard.py`, called from `serving/voice_service.py`). Both are
+heuristics fixed once from a handful of local clips. They are **not validated detectors**, they never change the score,
+and they never change the risk thresholds. `TRUSTMESH_AUDIO_GUARD=0` switches them off (debugging only).
+
+| Rule | Measure | Threshold | Where the threshold came from |
+|---|---|---|---|
+| Speech check: refuse | Spectral movement: standard deviation of the spectral centroid over the loud frames, divided by its mean (25 ms frames, 10 ms hop, loud = within 25 dB of the loudest frame) | at least 0.30 | Lowest value among 84 real-speech clips and versions: 0.477. Highest synthetic non-speech apart from a frequency sweep: 0.159 (pink noise). 0.30 is a round number in that gap, about 1.6 times below the quietest speech and 1.9 times above the highest noise |
+| Band-limit warning, rule 1 | Median over loud frames of the energy at 5 to 7.9 kHz relative to 0.3 to 3.4 kHz, in dB | at least -55 dB | Lowest of 13 clean clips: -52.0 dB. The threshold is 3 dB lower, rounded |
+| Band-limit warning, rule 2 | Cut-off frequency: highest frequency where the average loud-frame spectrum is within 55 dB of its 0.3 to 3.4 kHz level | at least 7600 Hz | The 13 clean clips lie between 7880 and 8000 Hz. The threshold is 280 Hz below the lowest |
+| Band-limit warning, rule 3 | The file's own sample rate | at least 16 kHz | By definition: a file recorded below 16 kHz has nothing above half its rate. Needed because the service up-samples by simple interpolation, which fills the missing band with mirror images and hides it from rules 1 and 2 |
+
+"Clean" means the 8 dataset clips on this machine (4 genuine, 4 fake) and 5 LibriSpeech clips (which were themselves cut
+from MP3 files). Re-encoded versions of the same 13 clips (AAC 32 kb/s, AAC 32 kb/s through 48 kHz, MP3 128 kb/s, Opus
+24 kb/s, 8 kHz mu-law telephony) and the owner's 6 recordings were measured afterwards. The thresholds come from the
+clean clips only; they were not moved to catch more of the owner's recordings (the owner's 3 voice clones, at -47.9 to
+-41.2 dB, are not flagged).
+
+**What the first suggested measure did.** The addendum's example, the frequency below which 99% of the energy lies, did
+not separate compressed from clean speech here (it sits at about 3 kHz for both, because speech energy is low-frequency
+anyway). It was measured and not used.
+
+**Counts** (`scripts/calibrate_audio_guard.py`; n clips; "rejected" = refused as not speech; "warned" = band-limit warning):
+
+| Group | n | Rejected | Warned |
+|---|---|---|---|
+| Clean | 13 | 0 | 0 |
+| AAC 32 kb/s | 13 | 0 | 0 |
+| AAC 32 kb/s through 48 kHz | 13 | 0 | 0 |
+| MP3 128 kb/s | 13 | 0 | 13 (rule 2: the encoder low-passes at about 7.4 kHz) |
+| Opus 24 kb/s | 13 | 0 | 0 |
+| 8 kHz mu-law telephony, converted back to 16 kHz | 13 | 0 | 13 |
+| 8 kHz mu-law file as uploaded (decoded at 8 kHz, up-sampled by the service) | 13 | 0 | 13 (rule 3 only; the spectral rules alone: 0) |
+| Speech with white noise at 20 / 10 / 5 dB SNR | 13 each | 0 / 0 / 0 | 0 / 0 / 0 |
+| Speech with white noise at 0 dB SNR | 13 | **5** | 0 |
+| Owner's genuine voice memos (AAC 32 kb/s) | 3 | 0 | **3** |
+| Owner's voice clones (MP3 128 kb/s) | 3 | 0 | 0 |
+| Synthetic non-speech (noise x3, tones x4, chord, square, tone plus noise) | 10 | 9 | n/a |
+| Synthetic frequency sweep | 1 | **0** | n/a |
+| Silence | 1 | refused earlier as silent | n/a |
+
+**Real speech wrongly rejected:** none of the 84 clean, compressed and owner clips. Speech buried in noise is the
+exception: 5 of 13 clips at 0 dB signal-to-noise were rejected (none at 5 dB).
+
+**What the warning does and does not catch.** It fires on telephone-band audio, on 8 kHz files, on MP3 with a low-pass,
+and on the owner's 3 genuine phone recordings. It did **not** fire on the clean clips re-encoded as AAC 32 kb/s (0 of 26,
+with or without the 48 kHz step) or as Opus 24 kb/s (0 of 13), although the model scores those lower (see "Why do genuine
+phone recordings score as fake?" in the status report). So it detects a band-limited recording, not codec damage in
+general. It is a warning that the result is unreliable, and it is silent on some audio for which the result is
+unreliable too.
+
+**Known gaps.** A frequency sweep passes the speech check. Singing, whispering, music and speech in loud noise were not
+tested. 84 clips from at least three speakers is a handful. No accuracy figure is attached to either check, and none
+appears on the site.
+
+**Where it shows.** The voice desk and the combined desk show the warning in plain words by default
+("This audio looks phone-quality or heavily compressed. This model was trained on clean recordings, so the result is
+unreliable.") with the measures and thresholds under "For engineers" and in the technical view. A clip that is not
+speech is refused with a 422 and the sentence "This does not look like speech, so nothing was scored."
+
 ## Open items (not yet built)
 
 - `engines/graph/`: built for everything Phase 1D uses. The Phase 1–1C-only pieces (GAT, GIN,

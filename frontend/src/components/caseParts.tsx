@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState, type ReactNode } from "react";
 import { ApiError, api, type GraphScore, type Health, type Verdict, type VoiceScore } from "../lib/api";
+import { ForEngineers } from "./engineers";
 import { CaveatNote, Live, MaskContext, Num } from "./evidence";
 
 /** Shows whichever voice model the API reports. Never a hard-coded name: the fallback can occur. */
@@ -242,5 +243,75 @@ export function RecordingBanner() {
     <p role="note" className="measure m-0 mb-4 border-l-4 border-ink bg-sheet px-3 py-2 text-sm" data-testid="recording-banner">
       Recording mode is on. Real transaction numbers, labels and scores are hidden on this desk.
     </p>
+  );
+}
+
+const LOW_QUALITY_LEAD = "This audio looks phone-quality or heavily compressed.";
+
+/** Warnings from the service other than the low-quality one, which has its own notice. */
+export function otherWarnings(voice: VoiceScore): string[] {
+  return (voice.warnings ?? []).filter((w) => !w.startsWith(LOW_QUALITY_LEAD));
+}
+
+/**
+ * Says, in plain words, when the recording looks phone-quality or compressed, and puts the measures under
+ * "For engineers". The score and the risk level are not touched by this: it is a warning, not a correction.
+ */
+export function AudioQualityNotice({ voice }: { voice: VoiceScore }) {
+  const q = voice.audio_quality;
+  return (
+    <>
+      {voice.low_quality_audio && (
+        <div role="alert" className="measure mt-3 border-l-4 border-flag bg-sheet px-3 py-2 text-sm" data-testid="low-quality-notice">
+          <p className="m-0 font-semibold">The result may be wrong for this recording.</p>
+          <p className="m-0 mt-1">
+            This audio looks phone-quality or heavily compressed. This model was trained on clean recordings, so the result
+            is unreliable.
+          </p>
+          <p className="m-0 mt-1">
+            A genuine voice can look fake for this reason alone. This is a known weakness of the model, not a mistake in
+            the recording.
+          </p>
+        </div>
+      )}
+      {q && (
+        <ForEngineers title="audio quality check">
+          <p className="m-0 mb-2">
+            Two checks run before the model. They are heuristics fixed once from a handful of local clips; they are not a
+            validated detector, and they never change the score.
+          </p>
+          <table className="w-full max-w-xl border-collapse" data-testid="audio-quality-table">
+            <thead>
+              <tr className="text-left text-xs text-ink-soft">
+                <th scope="col" className="pb-1 pr-4 font-normal">Measure</th>
+                <th scope="col" className="pb-1 pr-4 font-normal">This recording</th>
+                <th scope="col" className="pb-1 font-normal">Limit</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="rule-t">
+                <th scope="row" className="py-1.5 pr-4 text-left font-normal">Spectral movement (is it speech?)</th>
+                <td className="py-1.5 pr-4"><Live>{q.spectral_movement.toFixed(3)}</Live></td>
+                <td className="py-1.5">at least <Live>{q.thresholds.spectral_movement_min.toFixed(2)}</Live></td>
+              </tr>
+              <tr className="rule-t">
+                <th scope="row" className="py-1.5 pr-4 text-left font-normal">Sound above 5 kHz, against 0.3 to 3.4 kHz</th>
+                <td className="py-1.5 pr-4">{q.hf_to_mid_db === null ? "not measured" : <Live>{`${q.hf_to_mid_db.toFixed(1)} dB`}</Live>}</td>
+                <td className="py-1.5">at least <Live>{`${q.thresholds.hf_to_mid_min_db.toFixed(1)} dB`}</Live></td>
+              </tr>
+              <tr className="rule-t">
+                <th scope="row" className="py-1.5 pr-4 text-left font-normal">Cut-off frequency</th>
+                <td className="py-1.5 pr-4">{q.cutoff_hz === null ? "not measured" : <Live>{`${q.cutoff_hz.toFixed(0)} Hz`}</Live>}</td>
+                <td className="py-1.5">at least <Live>{`${q.thresholds.cutoff_min_hz.toFixed(0)} Hz`}</Live></td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="m-0 mt-2">
+            Result: {q.speech_like ? "speech-like" : "not speech-like"}
+            {q.reasons.length > 0 ? `; band-limit warning because of ${q.reasons.join(" and ")}` : "; no band-limit warning"}.
+          </p>
+        </ForEngineers>
+      )}
+    </>
   );
 }

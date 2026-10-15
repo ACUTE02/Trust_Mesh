@@ -47,3 +47,6 @@ TRUST_PROXY = os.environ.get("TRUSTMESH_TRUST_PROXY", "0") == "1"
 # Recording mode: the site masks real transaction numbers, labels and scores on the graph desks, so a video
 # can show the flow without publishing per-transaction results. The API itself is unchanged. Default off.
 RECORDING_MODE = os.environ.get("TRUSTMESH_RECORDING_MODE", "0") == "1"
+# Audio-quality guard (serving/audio_guard.py): refuse clips that do not look like speech, and warn on
+# phone-quality / band-limited audio. On by default; "0" switches both checks off (debugging only).
+AUDIO_GUARD = os.environ.get("TRUSTMESH_AUDIO_GUARD", "1") == "1"

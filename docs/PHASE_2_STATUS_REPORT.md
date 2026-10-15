@@ -568,3 +568,56 @@ clips average about +8; fake research clips about -14.
 
 **Not run:** other speakers; more clips; other bitrates and codecs; room echo on these clips; anything with the owner's
 own voice (the lossless recordings suggested earlier still do not exist); anything needing training.
+
+## Audio-quality guard, no training (2026-10-15)
+
+Spec: `PHASE_2D_ADDENDUM_01.md` point 1 (the guard first, before any Kaggle work). Code: `serving/audio_guard.py`,
+`serving/voice_service.py`, `serving/api.py`; calibration: `scripts/calibrate_audio_guard.py`. The score, the risk
+thresholds and the served model are unchanged.
+
+**What it does.**
+- **Speech check.** A clip with no speech-like change in its sound (a steady tone, hiss, a chord) is refused with a 422:
+  "This does not look like speech, so nothing was scored." The measure is spectral movement, with a threshold of 0.30.
+- **Band-limit warning.** Speech that looks phone-quality or band-limited is scored as before, and the response carries
+  `low_quality_audio: true`, the plain warning from the addendum, and the measures. Three rules: little sound above 5 kHz
+  (below -55 dB against the mid band), a hard cut-off below 7.6 kHz, or a file recorded below 16 kHz.
+- **On the site.** Plain words by default, the measures under "For engineers" and in the technical view, light and dark
+  theme (theme tokens only; checked in both in a real browser against the real model). The voice page says that
+  compressed phone audio is a known weakness.
+
+**Counts** (13 clean clips; each re-encoded version is the same 13 clips; the owner's recordings are 3 and 3):
+
+| Group | Refused as not speech | Band-limit warning |
+|---|---|---|
+| Clean | 0 of 13 | 0 of 13 |
+| AAC 32 kb/s / through 48 kHz | 0 of 13 / 0 of 13 | 0 of 13 / 0 of 13 |
+| MP3 128 kb/s | 0 of 13 | 13 of 13 |
+| Opus 24 kb/s | 0 of 13 | 0 of 13 |
+| 8 kHz mu-law telephony | 0 of 13 | 13 of 13 |
+| True 8 kHz file as uploaded | 0 of 13 | 13 of 13 (the spectral rules alone: 0 of 13) |
+| Speech plus white noise, 20 / 10 / 5 / 0 dB SNR | 0 / 0 / 0 / **5** of 13 | 0 of 13 each |
+| Owner's genuine voice memos | 0 of 3 | **3 of 3** |
+| Owner's voice clones | 0 of 3 | 0 of 3 |
+| Synthetic non-speech | 9 of 10 (a frequency sweep passes) | n/a |
+
+**Plain reading.**
+- It does what it was built for. It stops a tone or noise getting a confident score, and it warns on telephone-band
+  audio and on the owner's phone recordings, which are exactly the case where the model said "fake" to genuine speech.
+- No real speech clip was wrongly refused among 84 clean, compressed and owner clips. Speech buried in noise at 0 dB is
+  the exception (5 of 13 refused).
+- **It does not catch everything.** The warning did not fire on clean clips re-encoded as AAC 32 kb/s or Opus 24 kb/s
+  (0 of 39 including the 48 kHz version), although the model scores those lower. It detects a band-limited recording, not
+  codec damage as such. The addendum's suggested measure (the frequency below which 99% of the energy lies) did not
+  separate compressed from clean speech here and was not used.
+- **It is a heuristic checked on a handful of clips, not a validated detector.** No accuracy number comes with it and
+  none is shown on the site. Singing, whispering, music and speech in loud noise were not tested.
+
+**Tests.** `tests/test_audio_guard.py`: 19 new tests (tone and noise refused; speech-like audio passes; band-limited
+speech warned with the score unchanged; 8 kHz file flagged; API 422 and 200 bodies; a switch to turn it off; real local
+clips are not rejected when present). They fail on the code before the guard (ImportError; a pure tone was scored with
+no refusal and no warning). Frontend: `frontend/src/test/audioQuality.test.tsx`, 7 new tests. `tests/conftest.py` turns
+the guard off for the older serving tests, which use tones as stand-in audio. `scripts/self_test_live.py` was updated:
+noise and a tone are now expected to be refused.
+
+**Not run.** Docker (the stack was run as local processes: the real API and the dev server); music, singing, whispered
+speech; speech from more than a handful of speakers; any phone other than the owner's.

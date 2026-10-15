@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DemoState, ModelInUse, Score, VerdictTag, errorText, useHealth } from "../components/caseParts";
+import { AudioQualityNotice, DemoState, ModelInUse, Score, VerdictTag, errorText, otherWarnings, useHealth } from "../components/caseParts";
 import { ClipInput, ClipView } from "../components/clip";
 import { DotPlot, type PlotRow } from "../components/DotPlot";
 import { EngineerLayer, EngineerToggle, ForEngineers, Glossary, Meaning, VOICE_SCORE_MEANING } from "../components/engineers";
@@ -124,9 +124,10 @@ function VoiceDesk() {
             </span>
             <VerdictTag verdict={result.verdict} />
           </div>
-          {result.warnings && result.warnings.length > 0 && (
+          <AudioQualityNotice voice={result} />
+          {otherWarnings(result).length > 0 && (
             <p role="alert" className="measure mt-3 mb-0 border-l-4 border-flag bg-sheet px-3 py-2 text-sm" data-testid="voice-warnings">
-              {result.warnings.join(" ")}
+              {otherWarnings(result).join(" ")}
             </p>
           )}
           <p className="measure mt-3 mb-0 text-sm">
@@ -345,8 +346,12 @@ export function VoicePage() {
           <li className="rule-t pt-3">We tested on one dataset, plus a small check on a second one.</li>
           <li className="rule-t pt-3">The fake recordings in the data date from 2019. A newer voice generator may not be caught.</li>
           <li className="rule-t pt-3">
-            It struggles with ordinary phone recordings. In a small check, genuine phone clips were flagged as fake. The
-            model learned from clean studio recordings.
+            Compressed phone audio is a known weakness. A genuine voice from a phone call or a voice memo is often flagged as
+            fake, because the model learned from clean studio recordings.
+          </li>
+          <li className="rule-t pt-3">
+            The site warns when audio looks like that, and refuses a sound that is not speech. These checks are rough. They
+            miss some cases, and they do not change the score.
           </li>
           <li className="rule-t pt-3">
             The warning levels were set using the same test recordings. So they do not tell you how often a real caller would be
@@ -365,6 +370,14 @@ export function VoicePage() {
             <li>
               Codec sensitivity: a small self-test (not an accuracy measurement) saw genuine AAC-compressed recordings flagged
               as spoof. No codec augmentation was used in training. Details: docs/SELF_TEST_REPORT.md.
+            </li>
+            <li>
+              Audio guard (serving/audio_guard.py): a spectral-movement speech check and a high-frequency band-limit check,
+              both thresholds fixed once from a handful of local clips. A heuristic, not a validated detector. The band-limit
+              warning fires on telephone-band audio and on low-pass MP3, and did not fire on clean clips re-encoded as AAC at
+              voice-memo quality or as low-bitrate Opus, which the model still scored lower. The speech check passes a
+              synthetic frequency sweep and can reject speech buried in noise. Neither changes the score or the thresholds.
+              Calibration: docs/PHASE_2_STATUS_REPORT.md.
             </li>
             <li>Models E (BiLSTM on frozen tokens) and F (on-the-fly augmentation) never completed a real run: untested, not disproven.</li>
           </ul>

@@ -22,7 +22,7 @@ from engines.voice.model import SSLHead
 from engines.voice.preprocess import TARGET_SR, fix_length, resample_linear, trim_silence
 from engines.voice.ssl import SSLEncoder
 
-from . import config
+from . import audio_guard, config
 
 CLIP_SECONDS = 4.0
 MODELS = {  # name -> (weights glob, preferred file, pooling)
@@ -56,13 +56,15 @@ def decode_audio(blob, max_seconds=None):
     return wave, sr
 
 
-def prepare_clip(wave, sr):
-    """Raw waveform -> the fixed 4 s, 16 kHz, int16-quantised clip the SSL encoder was trained on."""
+def prepare_clip(wave, sr, want_trimmed=False):
+    """Raw waveform -> the fixed 4 s, 16 kHz, int16-quantised clip the SSL encoder was trained on.
+    With `want_trimmed` the trimmed (not yet cropped or padded) waveform is returned as a third value."""
     wave, sr = resample_linear(np.asarray(wave, dtype=np.float32), sr, TARGET_SR)
     if len(wave) < int(0.1 * sr):
         raise ValueError("audio clip is shorter than 0.1 s")
     trimmed, stats = trim_silence(wave, sr, top_db=30.0)
-    return quantize(fix_length(trimmed, int(TARGET_SR * CLIP_SECONDS))), stats
+    clip = quantize(fix_length(trimmed, int(TARGET_SR * CLIP_SECONDS)))
+    return (clip, stats, trimmed) if want_trimmed else (clip, stats)
 
 
 def find_weights(name, artifacts_dir=None):
@@ -129,8 +131,17 @@ class VoiceService:
             raise ValueError("the recording contains invalid sample values (NaN or infinity)")
         if len(wave) == 0 or float(np.max(np.abs(wave))) < SILENCE_PEAK:
             raise ValueError("the recording is silent, so there is nothing to score")
-        clip, stats = prepare_clip(wave, sr)
+        clip, stats, trimmed = prepare_clip(wave, sr, want_trimmed=True)
         warnings = []
+        quality = None
+        if config.AUDIO_GUARD:
+            # Runs before the model and never changes the score: a clip that is not speech is refused, and
+            # phone-quality or band-limited speech is scored but flagged as unreliable.
+            quality = audio_guard.check(trimmed, native_rate=sr)
+            if not quality["speech_like"]:
+                raise audio_guard.NotSpeechError(audio_guard.NOT_SPEECH_MESSAGE)
+            if quality["low_quality_audio"]:
+                warnings.append(audio_guard.LOW_QUALITY_MESSAGE)
         if stats["speech_s"] < MIN_RELIABLE_SOUND_S:
             warnings.append(f"Only {stats['speech_s']:.1f} s of sound after trimming silence. "
                             f"That is too little for a reliable result (at least {MIN_RELIABLE_SOUND_S:.0f} s is needed).")
@@ -145,6 +156,7 @@ class VoiceService:
         return {
             "score": spoof_prob, "verdict": self.verdict(spoof_prob, name),
             "low_confidence": bool(warnings), "warnings": warnings,
+            "low_quality_audio": bool(quality and quality["low_quality_audio"]), "audio_quality": quality,
             "model": name, "model_requested": model or self.requested_default,
             "fallback_used": name != (model or self.requested_default),
             "bonafide_logit": bonafide_logit,
