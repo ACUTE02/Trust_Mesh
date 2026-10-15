@@ -10,12 +10,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 
 from . import config
 from .cases import CaseStore
 from .fusion import fuse
 
 AUDIO_SUFFIXES = {".wav", ".flac", ".ogg", ".mp3"}
+RATE_LIMIT_MAX_CLIENTS = 1000  # above this many tracked addresses, idle ones are evicted
 
 
 def create_app(graph=None, voice=None, neo4j=None, cases=None, load_on_startup=True):
@@ -60,6 +62,7 @@ def create_app(graph=None, voice=None, neo4j=None, cases=None, load_on_startup=T
     # Demo-grade rate limit on the scoring POSTs (the expensive calls): a sliding one-minute window per
     # client address, kept in memory. It protects one small box from a runaway loop, nothing more.
     hits = defaultdict(deque)
+    app.state.rate_limit_hits = hits  # exposed for tests
 
     @app.middleware("http")
     async def rate_limit(request: Request, call_next):
@@ -68,7 +71,11 @@ def create_app(graph=None, voice=None, neo4j=None, cases=None, load_on_startup=T
             client = request.client.host if request.client else "unknown"
             if config.TRUST_PROXY and request.headers.get("x-forwarded-for"):
                 client = request.headers["x-forwarded-for"].split(",")[0].strip()
-            now, window = time.monotonic(), hits[client]
+            now = time.monotonic()
+            if len(hits) > RATE_LIMIT_MAX_CLIENTS:  # forget clients idle for over a minute
+                for key in [k for k, w in hits.items() if not w or now - w[-1] > 60]:
+                    del hits[key]
+            window = hits[client]
             while window and now - window[0] > 60:
                 window.popleft()
             if len(window) >= limit:
@@ -215,7 +222,9 @@ def create_app(graph=None, voice=None, neo4j=None, cases=None, load_on_startup=T
                           model: str | None = Query(None, description="'D' (default) or 'C' (fallback)"),
                           record: bool = Query(True, description="false = do not write a row to the cases table")):
         blob, name = await read_audio(file, clip)
-        result = score_voice(blob, model)
+        # CPU-bound inference runs in a worker thread so it does not block the event loop (other requests,
+        # including /health, would otherwise wait for every clip to finish).
+        result = await run_in_threadpool(score_voice, blob, model)
         if record:
             state["cases"].record_voice(name, result["score"], result["verdict"], result["model"])
         return {"clip": name, **result}
@@ -230,7 +239,7 @@ def create_app(graph=None, voice=None, neo4j=None, cases=None, load_on_startup=T
         known_node(node_id)
         blob, name = await read_audio(file, clip)
         graph = graph_svc().score(node_id)
-        voice = score_voice(blob, model)
+        voice = await run_in_threadpool(score_voice, blob, model)
         try:
             fused = fuse(graph["score"], voice["score"], w_graph, w_voice)
         except ValueError as exc:

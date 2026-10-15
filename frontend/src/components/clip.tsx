@@ -36,11 +36,15 @@ export function ClipInput({
 
   async function accept(blob: Blob, name: string, type: string) {
     setProblem(null);
+    // A rejected file also clears any clip loaded earlier, so "Score" can never send the previous recording
+    // while this error is on screen (same as the decode-failure branch below).
     if (type && !type.startsWith("audio/") && !type.startsWith("video/webm") && type !== "application/octet-stream") {
+      onClip(null);
       setProblem(`"${name}" is not an audio file. Choose a WAV, FLAC, MP3 or OGG recording.`);
       return;
     }
     if (maxBytes !== null && blob.size > maxBytes) {
+      onClip(null);
       setProblem(`"${name}" is larger than the ${health && health !== "down" ? health.limits?.max_upload_mb : ""} MB limit.`);
       return;
     }

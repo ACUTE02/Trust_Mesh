@@ -22,6 +22,9 @@ LABEL_NAMES = {LICIT: "licit", ILLICIT: "illicit", UNKNOWN: "unknown"}
 # Verdict bands are defined by the false-flag rate on held-out *known-licit* nodes (validation
 # steps 31-35, which the model never trained on): "high" flags 1% of licit nodes, "medium" 10%.
 HIGH_FPR, MEDIUM_FPR = 0.01, 0.10
+# Startup integrity check: the served weights must reproduce the recorded Phase 1D seed-42 test PR-AUC.
+REPORTED_SEED42_PR_AUC = 0.7474345053830228
+VERIFY_TOLERANCE = 5e-4  # same tolerance as the 2026-10-08 self-test
 
 
 def split_of(time_step):
@@ -91,6 +94,7 @@ class GraphService:
 
         self.thresholds = self._load_or_make_thresholds()
         self.verification = self._verify()
+        self._check_verification()
         self.gat = self._load_gat() if with_gat else None
         self.ready = True
         self.load_seconds = round(time.time() - t0, 1)
@@ -117,7 +121,17 @@ class GraphService:
         from sklearn.metrics import average_precision_score
         test = (self.labels != UNKNOWN) & (self.time_step >= 36)
         return {"test_pr_auc": float(average_precision_score(self.labels[test] == ILLICIT, self.scores[test])),
-                "n_test": int(test.sum()), "reported_seed42": 0.7474345053830228}
+                "n_test": int(test.sum()), "reported_seed42": REPORTED_SEED42_PR_AUC}
+
+    def _check_verification(self):
+        """Refuse to serve weights or data that do not reproduce the recorded result. Before this check the
+        number was only reported, so a wrong weight file would have served wrong scores without complaint."""
+        got = self.verification["test_pr_auc"]
+        if not abs(got - REPORTED_SEED42_PR_AUC) <= VERIFY_TOLERANCE:
+            raise RuntimeError(
+                f"graph weights/data do not reproduce the recorded test PR-AUC: got {got:.4f}, expected "
+                f"{REPORTED_SEED42_PR_AUC:.4f} (tolerance {VERIFY_TOLERANCE}). Check {config.XGB_WEIGHTS.name} "
+                "and the Elliptic files.")
 
     def _load_gat(self):
         gat = GAT(self.features.shape[1] - 4)  # GAT was trained on the 165 raw features only

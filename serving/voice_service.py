@@ -123,6 +123,10 @@ class VoiceService:
         name = model or self.default_model
         if name not in self.heads:
             raise KeyError(f"voice model {name!r} is not loaded (loaded: {sorted(self.heads)})")
+        # A float WAV can carry NaN/inf samples; they made trimming report 0 s of sound and the head return a
+        # meaningless score. Refuse them (the API turns this into a 422). Valid audio is untouched.
+        if len(wave) and not np.all(np.isfinite(wave)):
+            raise ValueError("the recording contains invalid sample values (NaN or infinity)")
         if len(wave) == 0 or float(np.max(np.abs(wave))) < SILENCE_PEAK:
             raise ValueError("the recording is silent, so there is nothing to score")
         clip, stats = prepare_clip(wave, sr)

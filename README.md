@@ -95,7 +95,11 @@ flowchart LR
 ### Honest limits
 
 - The graph score is real and checked: on startup the server confirms that the loaded XGBoost weights reproduce the
-  Phase 1D seed-42 test PR-AUC (0.7474; 0.7482 +/- 0.0030 over three seeds).
+  Phase 1D seed-42 test PR-AUC (0.7474; 0.7482 +/- 0.0030 over three seeds), and refuses to start if they differ by
+  more than 0.0005 (a wrong weight file or dataset would otherwise serve wrong scores silently). This is an integrity
+  check on one stored result, not a new evaluation.
+- The graph engine scores only transactions that are rows of the Elliptic dataset (all scores are computed once at
+  startup). There is no endpoint for scoring a new, unseen transaction.
 - The voice score comes from the real Phase 2C Model D head (mean-only pooling) on a frozen XLS-R encoder, and Model D
   is what is served (`/health` shows `phase2c_D_ssl_mean_only_P1_s42.pt`, fallback off). That file is **seed 42 of
   the three Model D seeds**. The headline Model D result stays the 3-seed mean, EER 0.0166 +/- 0.0019; seed 42's own
