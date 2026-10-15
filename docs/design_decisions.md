@@ -1156,6 +1156,61 @@ appears on the site.
 unreliable.") with the measures and thresholds under "For engineers" and in the technical view. A clip that is not
 speech is refused with a 422 and the sentence "This does not look like speech, so nothing was scored."
 
+## Phase 2D: codec-robust voice head (Model F2). Design and pre-registered criteria (2026-10-15)
+
+Written before any Phase 2D run, and not to be changed afterwards. Nothing has been trained. The spec is
+`docs/PHASE_2D_CODEC_ROBUSTNESS.md` with its addendum 1; where they differ the addendum wins.
+
+**Question.** Lossy compression pushes genuine speech towards "fake" for the served voice model (log issue #56). Does
+training the same head on features of codec-processed copies of the training clips fix that, without hurting clean audio?
+
+**What changes and what does not.** The encoder stays frozen (XLS-R 300M). The head is Model D's recipe (mean-only
+pooling over 25 layers, 133,402 parameters, same learning rate, patience, batch size, seeds 42/43/44). The only change is
+the training data: each training clip contributes its clean version plus 3 augmented versions, chosen with a fixed seed
+from the training menu. Same speaker-disjoint P1 split as Model D (split seed 42; identity checked by the test-index hash
+and counts in the notebook). The comparison model is a Model D control trained in the same notebook on clean features only,
+with the same code, so nothing depends on an earlier run.
+
+**Conditions (names fixed).** Training menu: `aac32`, `aac32_via48k`, `mp3_64`, `opus24`, `echo` (synthetic room impulse
+response from exponentially decaying noise, RT60 0.2 to 0.8 s, no external data), `noise_lowsnr` (white noise, 5 to 20 dB
+SNR). Held out, evaluation only, never trained on: `aac16`, `opus12`, `mulaw8k` (8 kHz G.711 through ffmpeg, back to 16
+kHz), `mp3_32`. Codecs are real ffmpeg codecs applied to the full original clip; the clip is then trimmed and fixed to 4 s
+exactly like a clean clip. If a codec is missing from the available ffmpeg the notebook records it and substitutes openly
+(`opus24` -> `aac24_for_opus24`, `opus12` -> `aac12_for_opus12`); the result file lists any substitution.
+
+**Validation and tuning.** Early stopping uses a validation set that mixes the clean and the augmented versions of the
+validation clips, for the control and for F2 alike. Hyperparameters are Model D's; nothing is tuned on test, and no
+setting is changed after seeing test results.
+
+**Evaluation.** The P1 test clips, each processed with every condition (training menu and held out). EER per condition and
+pooled, with stratified bootstrap intervals (1000 resamples). Differences are F2 minus control, paired bootstrap. On the
+pooled codec set the bootstrap resamples whole clips (all of a clip's condition versions together), because versions of one
+clip are not independent. The pooled codec set is the six training-menu conditions; held-out conditions are reported
+separately. The decision uses each model's score averaged over its three seeds; per-seed EERs are reported next to it.
+Also reported for each model and condition: the share of genuine clips flagged at the threshold that gives the EER on
+clean validation clips (what a caller would see).
+
+**Success criteria (pre-registered, addendum version).**
+1. Clean audio: the 95% interval of the EER difference (F2 minus control) on the clean test clips does not lie wholly
+   above zero (F2 is not significantly worse).
+2. Codec audio: (a) on every single training-menu condition the interval of the EER difference does not lie wholly above
+   zero; and (b) on the pooled training-menu test set the interval lies wholly below zero (F2 is significantly better).
+3. Held-out conditions (`aac16`, `opus12`, `mulaw8k`, `mp3_32`) are reported separately. Not a pass or fail criterion.
+4. The owner's own recordings are a demo only, never a criterion.
+If 1 or 2 fails, it is reported as a negative result. No retuning and re-running until it passes.
+
+**Known limits stated in advance.**
+- To fit Kaggle's disk, each condition is evaluated on a fixed seeded subset of the P1 test clips: all bonafide plus
+  spoofs up to `EVAL_PER_CONDITION` clips in total (default 4000); the clean comparison is also given on the full test
+  set. The subset and its class counts are written into the results file.
+- F2 sees four versions of each training clip, the control one. F2 therefore takes more gradient steps per epoch. This
+  is part of what "train on the augmented data" means; it is not a separate arm.
+- The synthetic echo and noise are simple; real rooms and real calls are not covered. Real AAC 32 kb/s and Model F's
+  simulated codec differ clip by clip (Phase 2D A2: mean drops 8.3 vs 11.0, per-clip rank correlation -0.17 on 9
+  clips), so the simulation is not used.
+- Dataset terms: the trained head weights stay out of git until the owner has checked the dataset terms. The results file
+  holds aggregates only (no clip identifiers, no per-clip scores).
+
 ## Open items (not yet built)
 
 - `engines/graph/`: built for everything Phase 1D uses. The Phase 1–1C-only pieces (GAT, GIN,

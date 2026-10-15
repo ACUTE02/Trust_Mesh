@@ -621,3 +621,71 @@ noise and a tone are now expected to be refused.
 
 **Not run.** Docker (the stack was run as local processes: the real API and the dev server); music, singing, whispered
 speech; speech from more than a handful of speakers; any phone other than the owner's.
+
+## Phase 2D: codec-robust voice head, preparation only (2026-10-15)
+
+**Nothing has been trained.** No Kaggle run was started, the served model, thresholds and `serving/` were not
+changed (other than the audio guard above, which needed no training). What exists is the code, the notebook, the tests,
+the pre-registered criteria and the runbook. The spec is `docs/PHASE_2D_CODEC_ROBUSTNESS.md` with addendum 1.
+
+**A1. How features and caches are built today (read from the code and issues #25 to #28).**
+- Notebook 04 decodes every clip once into `wave_trimmed.npy`: int16, 64,000 samples (4 s) per clip, trimmed of
+  leading/trailing silence at 30 dB and repeat-padded. For 36,775 clips that is 36,775 x 64,000 x 2 B = 4.7 GB.
+- The frozen XLS-R 300M encoder runs over it once; `ssl_pooled.npy` stores, per clip, mean and standard deviation over
+  frames for each of 25 layers: [36,775, 25, 2048] float16 = 3.8 GB. Model C reads all of it; **Model D reads only the
+  mean half** (1024 values per layer, 1.9 GB worth), which is why D is "mean-only" with 133,402 head parameters.
+- LFCC variants (untrimmed and three silence ablations, about 7 GB) exist only for the silence study and were freed after it.
+- Model E's per-frame sequence cache would be about 15 GB; Model F re-runs the frozen encoder on every training batch.
+- What made earlier attempts slow or fail: #25 and #28 ran out of disk (about 8.5 GB of caches that must stay resident, plus a
+  15 GB sequence cache, plus about 5.6 GB of dataset and model caches, against a real quota well below the nominal one);
+  #26 re-ran the frozen encoder for validation every epoch although the features never change; #27 printed nothing for
+  hours, so a slow run looked like a hang. Phase 2D therefore stores only the mean half (51,200 B per clip version),
+  computes the total and refuses to start without 1.3x of it free, writes chunks that survive a restart, and prints a
+  line per chunk with seconds per version.
+
+**A2. Is Model F's simulated codec close to a real one?** On the 9 genuine clips available locally (4 dataset clips,
+5 LibriSpeech clips), the drop in the raw score under `simulate_low_bitrate` (4x down/up-sampling plus 6-bit mu-law) was
+compared with the drop under real AAC 32 kb/s (`scripts/phase2d_check_simulation.py`, rule written before running:
+mean drop within half to twice the real one, and every clip drops under both).
+
+| | Mean drop in raw score | Clips that drop | Risk bands after (low / medium / high) |
+|---|---|---|---|
+| Simulated | 11.0 | 9 of 9 | 0 / 2 / 7 |
+| Real AAC 32 kb/s | 8.3 | 9 of 9 | 3 / 3 / 3 |
+| Real AAC 32 kb/s through 48 kHz | 14.9 | 9 of 9 | not computed |
+
+By the pre-registered rule the simulation is "close" on average (ratio 1.32). Plainly: it is close in mean size only. Its
+per-clip drops are not correlated with the real codec's (rank correlation -0.17 on 9 clips), and it pushes more clips to
+the high band. It is not used in Phase 2D; the real codecs are. The real-codec effect was reproduced locally (every clip
+drops), so the stop condition in the spec does not apply.
+
+**A3. Design (F2).** Described in full in `docs/design_decisions.md` ("Phase 2D"): features of real-codec versions of
+each training clip (3 of 6 menu conditions chosen per clip with seed 42), 4 held-out conditions for the test only, the same
+head and seeds as Model D, a control trained in the same notebook, one split. Code: `engines/voice/codec.py`
+(conditions, ffmpeg lookup, substitution record, seeded assignment) and `engines/voice/robust.py` (chunked resumable
+extraction, disk budget, cost projection, clip-clustered paired bootstrap).
+
+**A4/A5. Notebook.** `notebooks/src/06_voice_codec_robust.py` builds `notebooks/06_voice_codec_robust.ipynb`. `RUN_MODE =
+"PILOT"` (the default) processes about 500 clips, prints seconds per clip, projected hours, projected cache size and free
+disk, and stops. `"FULL"` runs everything chunked and resumable, trains the control and F2 for seeds 42, 43, 44,
+evaluates every condition with paired bootstrap intervals and the share of genuine clips flagged at the clean-validation
+EER threshold, and writes aggregates only. Per condition, each model's EER is also given on the same clips clean.
+Estimated size with the defaults (a seeded cap of 4000 test clips per condition): about 154,000 stored versions, about 7.9 GB.
+
+**A6. Tests.** `tests/test_voice_phase2d.py`: 37 tests (each real codec round-trips and differs; telephony removes
+everything above 4 kHz; echo keeps level and adds a tail; noise stays within 5 to 20 dB SNR; seeded and distinct
+assignment; substitution and unavailable recording; disk stop; cost projection; chunk writing, crash and resume matching a
+clean run, time-limit stop, reuse of an earlier session's chunks, no waveforms stored; split settings identical to notebook
+04's and the expected counts equal to the recorded Model D results; clustered bootstrap behaviour and criterion reading).
+`tests/smoke_notebook_06.py` runs the whole built notebook on synthetic clips, first as a pilot and then in full, with real
+ffmpeg and a tiny random encoder; its numbers mean nothing.
+
+**A7. Runbook.** `docs/KAGGLE_RUNBOOK_PHASE_2D.md`. Expected time: unknown until the pilot.
+
+**A8. Quality indicator.** Done first, under "Audio-quality guard" above, as the addendum asks. It catches band-limited
+audio; it does not catch AAC 32 kb/s or Opus 24 kb/s re-encodes of clean clips.
+
+**Known limits of the design, stated before the run.** Only the 4000-clip subset per condition is evaluated (clean is also
+given on the full test set); F2 sees four versions of each training clip, the control one; echo and noise are simple
+synthetic models; ten conditions are not a phone network. The decision uses seed-averaged scores, so the three seeds are
+not three independent tests.
