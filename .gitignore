@@ -42,3 +42,9 @@ _to_delete/
 !.env.example
 node_modules/
 frontend/dist/
+
+# Local working notes and files that must not be published
+project.md
+interview_prep/
+CLAUDE.md
+artifacts/graph/results_sanitised.json
