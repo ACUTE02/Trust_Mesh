@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { AudioQualityNotice, DemoState, ModelInUse, Score, VerdictTag, errorText, otherWarnings, useHealth } from "../components/caseParts";
 import { ClipInput, ClipView } from "../components/clip";
 import { DotPlot, type PlotRow } from "../components/DotPlot";
 import { EngineerLayer, EngineerToggle, ForEngineers, Glossary, Meaning, VOICE_SCORE_MEANING } from "../components/engineers";
-import { CaveatNote, EvidenceRow, Live, Num, Section } from "../components/evidence";
+import { CaveatNote, EvidenceRow, Live, Marker, Num } from "../components/evidence";
+import { KineticText } from "../components/KineticText";
 import { TechView } from "../components/TechView";
 import { TwoScoresInstrument } from "../components/TwoScoresInstrument";
-import { api, readCallLog, startCallLog, type ApiCall, type VoiceScore } from "../lib/api";
+import { ApiError, api, readCallLog, startCallLog, type ApiCall, type VoiceScore } from "../lib/api";
 import type { Clip } from "../lib/audio";
+import { Chapter, useResetStage } from "../world/chapters";
+import { clearVoice, publishVoice } from "../world/voiceData";
 
 // Layer 1 rows: plain names.
 const SILENCE_PLAIN: PlotRow[] = [
@@ -67,13 +71,24 @@ const GLOSSARY: [string, string][] = [
   ["PR-AUC, FPR, XGBoost, GNN", "Terms from the transaction page; its glossary explains them."],
 ];
 
-function VoiceDesk() {
+function VoiceDesk({ onResult }: { onResult?: (r: VoiceScore | null) => void }) {
   const health = useHealth();
   const [clip, setClip] = useState<Clip | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<VoiceScore | null>(null);
   const [calls, setCalls] = useState<ApiCall[]>([]);
+
+  // The terrain behind the page follows the clip, then the service's answer: score light, fog bank, or collapse.
+  useEffect(() => {
+    onResult?.(result);
+    publishVoice({
+      verdict: result?.verdict ?? null,
+      lowQuality: !!result?.low_quality_audio,
+      cutoffHz: result?.audio_quality?.cutoff_hz ?? null,
+      notSpeech: false,
+    });
+  }, [result, onResult]);
 
   async function score() {
     if (!clip) return;
@@ -84,6 +99,7 @@ function VoiceDesk() {
     try {
       setResult(await api.voiceScore(clip.wav, clip.name));
     } catch (e) {
+      if (e instanceof ApiError && e.status === 422 && /does not look like speech/.test(e.message)) publishVoice({ notSpeech: true });
       setError(errorText(e));
     } finally {
       setCalls(readCallLog());
@@ -100,6 +116,7 @@ function VoiceDesk() {
           setClip(c);
           setResult(null);
           setError(null);
+          publishVoice({ samples: c?.samples ?? null, verdict: null, notSpeech: false, lowQuality: false, cutoffHz: null });
         }}
       />
       {clip && <ClipView clip={clip} leadSilence={result?.lead_silence_s} trailSilence={result?.trail_silence_s} />}
@@ -150,13 +167,26 @@ function VoiceDesk() {
   );
 }
 
+const GUARD_NOT_SPEECH = "This does not look like speech, so nothing was scored.";
+
 export function VoicePage() {
+  useResetStage();
+  const [result, setResult] = useState<VoiceScore | null>(null);
+  useEffect(() => {
+    publishVoice({ samples: null, verdict: null, notSpeech: false, lowQuality: false, cutoffHz: null, event: null });
+    return clearVoice;
+  }, []);
+  const [event, setEvent] = useState<"collapse" | "fog" | null>(null);
+  const showEvent = (e: "collapse" | "fog" | null) => {
+    setEvent(e);
+    publishVoice({ event: e });
+  };
   return (
     <EngineerLayer page="voice">
-      <section className="grid items-start gap-x-12 gap-y-10 pt-14 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]" aria-labelledby="voice-h">
-        <div>
+      <Chapter stage={0} className="hero" label="voice-h">
+        <div className="scrim chapter-card" style={{ maxWidth: "46rem" }}>
           <h1 id="voice-h" style={{ fontSize: "var(--text-hero)" }}>
-            The model cheated by listening to silence. We removed the silence and measured again.
+            <KineticText text="The model cheated by listening to silence. We removed the silence and measured again." mode="wipe" />
           </h1>
           <div className="measure mt-6 grid gap-2">
             <p className="m-0 text-lg">This model listens for signs that a voice is computer-made.</p>
@@ -172,220 +202,351 @@ export function VoicePage() {
             <EngineerToggle />
           </div>
         </div>
-        <TwoScoresInstrument
-          title="One voice model, the same recordings, with and without the silence at the ends."
-          hue="spectrum"
-          axisLabel="Error rate. Lower is better."
-          axisMax={{ at: 0.3, label: "0.3" }}
-          ticks={[
-            { at: 0, label: "0" },
-            { at: 0.1, label: "0.1" },
-            { at: 0.2, label: "0.2" },
-            { at: 0.3, label: "0.3" },
-          ]}
-          meaning={VOICE_SCORE_MEANING}
-          shortcutNote="This score is a cheat, not a real result."
-          lines={[
-            "Same model, same recordings. Only the silence changed.",
-            "In this dataset, genuine recordings start with more silence than fake ones.",
-            "So a model can tell them apart without listening to the voice at all.",
-          ]}
-          first={{ label: "Silence kept", id: "voice.p2.untrimmed" }}
-          second={{ label: "Silence removed", id: "voice.p2.trimmed" }}
-        />
-      </section>
-
-      <ForEngineers title="protocol">
-        <ul className="m-0 grid list-none gap-1.5 p-0">
-          <li>
-            Data: ASVspoof 2019 LA, evaluation partition only; a <Num id="voice.clips" />-clip subset (every bonafide clip, spoof
-            sampled). Not the official train/dev/eval protocol, so not comparable with published ASVspoof numbers.
-          </li>
-          <li>
-            Split: speaker-disjoint; <Num id="voice.trainBonafide" /> bonafide training clips in Phase 2B (
-            <Num id="voice.p2.trainBonafide" /> in Phase 2).
-          </li>
-          <li>Metric: EER, bonafide as the target class. Seeds: three for A, C and D; single runs elsewhere.</li>
-          <li>
-            Front-end: wav2vec2-XLS-R-300M, frozen; per-layer pooling over frames, a learned softmax weight per layer, then a
-            small MLP head. Model C pools mean and std (<Num id="voice.params.C" /> head parameters); Model D pools mean only (
-            <Num id="voice.params.D" />).
-          </li>
-          <li>
-            Trimming rule: energy-based trim of leading and trailing silence, then crop or repeat-pad to{" "}
-            <Num id="voice.scoredSeconds" />, in training and in serving.
-          </li>
-          <li>
-            Served: seed 42 of the three Model D seeds. Its own EER from the saved test scores is <Num id="voice.2c.D.seed42" />, a
-            rough single-seed figure; the headline stays <Num id="voice.2c.D" />.
-          </li>
-        </ul>
-      </ForEngineers>
-
-      <Section title="Where the cheat was hiding" id="silence">
-        <DotPlot
-          caption="Error rate in three versions of the same test. Lowest first. Hatched rows are cheats, not results."
-          rows={SILENCE_PLAIN}
-          axisMax={0.3}
-          axisLabel="error rate, lower is better"
-          hue="spectrum"
-        />
-        <div className="measure mt-4 grid gap-2">
-          <p className="m-0">Mostly, the model was measuring how long the silence lasted.</p>
-          <p className="m-0">
-            We blanked out the silence but kept its length. The error rate stayed very low, at <Num id="voice.2b.zerosOriginal" />.
+        <div id="desk" className="panel mt-6" style={{ maxWidth: "46rem" }}>
+          <h2 className="mb-3 text-xl">Try it: your voice, as a landscape</h2>
+          <p className="measure mt-0 mb-6">
+            Record or upload a clip. The terrain behind this panel is drawn from your own recording, in your browser, before
+            anything is sent. Frequency runs into the distance, time runs across, loudness is height. Use your own recording:
+            no dataset recording comes with this site.
           </p>
-          <p className="m-0">So we cut the silence off every recording, in training and in the live demo.</p>
+          <VoiceDesk onResult={setResult} />
         </div>
-        <ForEngineers title="silence ablations">
-          <DotPlot
-            caption="EER per silence condition, sorted. Hatched: shortcut, not a result."
-            rows={SILENCE_LADDER}
-            axisMax={0.3}
-            axisLabel="EER, lower is better"
-            hue="spectrum"
-          />
-          <p className="mt-3 mb-0">
-            Duration and position carry most of the shortcut (zeros at original duration: <Num id="voice.2b.zerosOriginal" />). The
-            content of the silence carries a smaller, independent signal (<Num id="voice.2b.silenceOnly" /> from{" "}
-            <Num id="voice.2b.silenceOnlySeconds" /> of it). This experiment does not say which acoustic property.
-          </p>
-        </ForEngineers>
-      </Section>
+      </Chapter>
 
-      <Section title="After the fix" id="progression">
-        <p className="measure mt-0 mb-2 text-lg">
-          After the fix, the chosen model gets about <Num id="voice.2c.D.per100" /> in 100 recordings wrong.
-        </p>
-        <div className="mb-5">
-          <Meaning>
-            That is an error rate of <Num id="voice.2c.D" />. {VOICE_SCORE_MEANING}
-          </Meaning>
-        </div>
-        <DotPlot
-          caption="Error rate with the silence removed, in the order we built the models. A bracket shows the spread across three training runs."
-          rows={PROGRESSION_PLAIN}
-          axisMax={0.3}
-          axisLabel="error rate, lower is better"
-          hue="spectrum"
-        />
-        <div className="measure mt-4 grid gap-2">
-          <p className="m-0">More training data helped. Starting from a large ready-made speech model helped far more.</p>
-          <p className="m-0">We split the data our own way. So these numbers cannot be compared with published results.</p>
-        </div>
-        <ForEngineers title="model progression">
-          <DotPlot
-            caption="EER on trimmed audio, in build order. Bracket: three-seed standard deviation."
-            rows={PROGRESSION}
-            axisMax={0.3}
-            axisLabel="EER, lower is better"
-            hue="spectrum"
-          />
-          <p className="mt-3 mb-0">
-            C and D are statistically tied on every metric measured; D has half of C's head parameters (
-            <Num id="voice.params.D" /> against <Num id="voice.params.C" />), so D is served.
+      <Chapter stage={1} className="chapter" label="hears-h">
+        <div className="scrim chapter-card">
+          <h2 id="hears-h" className="text-xl">
+            <KineticText text="What the model hears" mode="wipe" />
+          </h2>
+          <p className="measure mt-4 mb-3">
+            The model never sees your terrain. It listens to the sound, in short slices, and gives one score: 0 sounds genuine, 1
+            sounds fake. When the answer arrives, a light runs across the landscape and settles. Its colour says the risk
+            level, and the words beside the score say the same.
           </p>
-        </ForEngineers>
-      </Section>
-
-      <Section title="Does it still work on fakes it has never heard?" id="generalisation">
-        <EvidenceRow
-          ids={["voice.gap.A", "voice.gap.A.per100", "voice.gap.D"]}
-          claim={<>We hid four kinds of fake during training. The simple model fell apart on them. The chosen model did not.</>}
-          more={
-            <>
-              On the hidden kinds, the simple model got about <Num id="voice.gap.A.per100" /> more recordings in 100 wrong. The
-              chosen model's error rate moved by <Num id="voice.gap.D" />. That is too small to tell apart from chance.
-            </>
-          }
-        >
-          <ForEngineers title="attack-disjoint test">
-            <DotPlot
-              caption="Unseen-minus-seen EER on four held-out attack systems (A07, A12, A14, A15). Brackets: 95% bootstrap intervals."
-              rows={ATTACK_GAP}
-              axisMax={0.3}
-              axisLabel="change in EER"
-              hue="spectrum"
-              signedAxis
-            />
+          <p className="measure m-0 text-sm text-ink-soft">Nothing plays sound by itself on this page.</p>
+          <ForEngineers title="protocol">
+            <ul className="m-0 grid list-none gap-1.5 p-0">
+              <li>
+                Data: ASVspoof 2019 LA, evaluation partition only; a <Num id="voice.clips" />-clip subset (every bonafide clip,
+                spoof sampled). Not the official train/dev/eval protocol, so not comparable with published ASVspoof numbers.
+              </li>
+              <li>
+                Split: speaker-disjoint; <Num id="voice.trainBonafide" /> bonafide training clips in Phase 2B (
+                <Num id="voice.p2.trainBonafide" /> in Phase 2).
+              </li>
+              <li>Metric: EER, bonafide as the target class. Seeds: three for A, C and D; single runs elsewhere.</li>
+              <li>
+                Front-end: wav2vec2-XLS-R-300M, frozen; per-layer pooling over frames, a learned softmax weight per layer, then a
+                small MLP head. Model C pools mean and std (<Num id="voice.params.C" /> head parameters); Model D pools mean
+                only (<Num id="voice.params.D" />).
+              </li>
+              <li>
+                Trimming rule: energy-based trim of leading and trailing silence, then crop or repeat-pad to{" "}
+                <Num id="voice.scoredSeconds" />, in training and in serving.
+              </li>
+              <li>
+                Served: seed 42 of the three Model D seeds. Its own EER from the saved test scores is{" "}
+                <Num id="voice.2c.D.seed42" />, a rough single-seed figure; the headline stays <Num id="voice.2c.D" />.
+              </li>
+              <li>
+                Reported by the service for the last clip you scored:{" "}
+                {result ? (
+                  <>
+                    model <Live>{result.model}</Live>, medium risk from <Live>{result.thresholds.medium.toFixed(4)}</Live>, high risk
+                    from <Live>{result.thresholds.high.toFixed(4)}</Live>.
+                  </>
+                ) : (
+                  "nothing yet; score a clip above."
+                )}
+              </li>
+            </ul>
           </ForEngineers>
-        </EvidenceRow>
-        <EvidenceRow
-          ids={["voice.itw.A.per100", "voice.itw.D.per100", "voice.itw.A", "voice.itw.D", "voice.itw.total"]}
-          claim={<>On a completely different set of recordings, the simple model was worse than guessing. The chosen model held up.</>}
-          more={
-            <>
-              The simple model got about <Num id="voice.itw.A.per100" /> in 100 wrong. The chosen model got about{" "}
-              <Num id="voice.itw.D.per100" /> in 100 wrong. This test used only <Num id="voice.itw.total" /> recordings, so treat
-              it as a rough check.
-            </>
-          }
-        >
-          <ForEngineers title="cross-dataset test">
+        </div>
+      </Chapter>
+
+      <Chapter stage={2} id="phone" className="chapter" label="phone-h">
+        <div className="scrim chapter-card" style={{ maxWidth: "44rem" }}>
+          <p className="m-0 mb-3">
+            <Marker ids={["voice.phone.research.aac", "voice.phone.libri.aac", "voice.phone.research.via48", "voice.phone.libri.via48"]} />
+          </p>
+          <h2 id="phone-h" className="text-xl">
+            <KineticText text="What phone audio does to speech" mode="wipe" />
+          </h2>
+          <p className="measure mt-4 mb-4">
+            This model has mostly seen clean studio terrain. Squeeze a genuine recording the way a phone call or a voice message
+            does, and the high frequencies are cut off like a cliff, and the model often calls the speech fake. A small test, on
+            genuine clips from at least two speakers:
+          </p>
+          <table className="stack-sm w-full border-collapse text-sm">
+            <caption className="sr-only">How many genuine clips still scored as low risk after compression</caption>
+            <thead>
+              <tr className="text-left text-xs text-ink-soft">
+                <th scope="col" className="pb-2 pr-3 font-normal">Genuine clips</th>
+                <th scope="col" className="pb-2 pr-3 font-normal">How many</th>
+                <th scope="col" className="pb-2 pr-3 font-normal">Still low risk after AAC at 32 kb/s</th>
+                <th scope="col" className="pb-2 font-normal">Still low risk with an extra 48 kHz step</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="rule-t">
+                <th scope="row" className="py-2 pr-3 text-left font-semibold">Research clips</th>
+                <td className="py-2 pr-3" data-label="How many"><Num id="voice.phone.research.n" /></td>
+                <td className="py-2 pr-3" data-label="Low risk after AAC 32"><Num id="voice.phone.research.aac" /></td>
+                <td className="py-2" data-label="Low risk through 48 kHz"><Num id="voice.phone.research.via48" /></td>
+              </tr>
+              <tr className="rule-t">
+                <th scope="row" className="py-2 pr-3 text-left font-semibold">One speaker, LibriSpeech</th>
+                <td className="py-2 pr-3" data-label="How many"><Num id="voice.phone.libri.n" /></td>
+                <td className="py-2 pr-3" data-label="Low risk after AAC 32"><Num id="voice.phone.libri.aac" /></td>
+                <td className="py-2" data-label="Low risk through 48 kHz"><Num id="voice.phone.libri.via48" /></td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="measure mt-4 mb-3 text-sm">
+            The site warns when audio looks phone-quality or heavily compressed. The warning caught <Num id="guard.mulaw.warned" /> of{" "}
+            <Num id="guard.clips.n" /> clips squeezed as 8 kHz telephone audio and <Num id="guard.mp3.warned" /> of{" "}
+            <Num id="guard.clips.n" /> as MP3 at 128 kb/s. It caught <Num id="guard.aac.warned" /> of <Num id="guard.aac.n" /> clips
+            squeezed as AAC at 32 kb/s or Opus at 24 kb/s. It is a rough check on a handful of clips, not a tested detector.
+          </p>
+          <p className="measure m-0 text-sm">
+            A later voice check, trained on squeezed copies, made this weakness smaller. It did not remove it.{" "}
+            <Link to="/evidence#phase2d">See the Phase 2D exhibit.</Link>
+          </p>
+        </div>
+      </Chapter>
+
+      <Chapter stage={3} id="guard" className="chapter" label="guard-h">
+        <div className="scrim chapter-card" style={{ maxWidth: "44rem" }}>
+          <h2 id="guard-h" className="text-xl">
+            <KineticText text="Two ways the site says no" mode="wipe" />
+          </h2>
+          <div className="measure mt-4 grid gap-4">
+            <div>
+              <p className="m-0 font-semibold">Not speech</p>
+              <p className="m-0 mt-1 text-sm">
+                A steady tone or hiss is refused with a plain message, and the terrain collapses flat: &ldquo;{GUARD_NOT_SPEECH}&rdquo;
+              </p>
+              <button type="button" className="btn btn-quiet mt-2 text-sm" aria-pressed={event === "collapse"} onClick={() => showEvent(event === "collapse" ? null : "collapse")}>
+                {event === "collapse" ? "Put the terrain back" : "Show the terrain collapse"}
+              </button>
+            </div>
+            <div>
+              <p className="m-0 font-semibold">Low-quality audio</p>
+              <p className="m-0 mt-1 text-sm">
+                Audio that looks phone-quality is still scored, with a warning that the result is unreliable. A fog bank settles
+                at the frequency where the sound is cut off.
+              </p>
+              <button type="button" className="btn btn-quiet mt-2 text-sm" aria-pressed={event === "fog"} onClick={() => showEvent(event === "fog" ? null : "fog")}>
+                {event === "fog" ? "Lift the fog" : "Show the fog bank"}
+              </button>
+            </div>
+          </div>
+          <p className="measure mt-4 mb-0 text-sm text-ink-soft">These two buttons only change the picture. The real checks run in the scoring service.</p>
+        </div>
+      </Chapter>
+
+      <Chapter stage={4} id="silence" className="below-fold mt-24" label="silence-h">
+        <div className="panel">
+          <h2 id="silence-h" className="mb-6 text-xl">
+            Where the cheat was hiding
+          </h2>
+          <TwoScoresInstrument
+            title="One voice model, the same recordings, with and without the silence at the ends."
+            hue="spectrum"
+            axisLabel="Error rate. Lower is better."
+            axisMax={{ at: 0.3, label: "0.3" }}
+            ticks={[
+              { at: 0, label: "0" },
+              { at: 0.1, label: "0.1" },
+              { at: 0.2, label: "0.2" },
+              { at: 0.3, label: "0.3" },
+            ]}
+            meaning={VOICE_SCORE_MEANING}
+            shortcutNote="This score is a cheat, not a real result."
+            lines={[
+              "Same model, same recordings. Only the silence changed.",
+              "In this dataset, genuine recordings start with more silence than fake ones.",
+              "So a model can tell them apart without listening to the voice at all.",
+            ]}
+            first={{ label: "Silence kept", id: "voice.p2.untrimmed" }}
+            second={{ label: "Silence removed", id: "voice.p2.trimmed" }}
+          />
+          <div className="mt-10">
             <DotPlot
-              caption="EER on In-the-Wild (balanced sample). Brackets: 95% intervals. C and D do not differ significantly."
-              rows={IN_THE_WILD}
-              axisMax={1}
+              caption="Error rate in three versions of the same test. Lowest first. Hatched rows are cheats, not results."
+              rows={SILENCE_PLAIN}
+              axisMax={0.3}
+              axisLabel="error rate, lower is better"
+              hue="spectrum"
+            />
+          </div>
+          <div className="measure mt-4 grid gap-2">
+            <p className="m-0">Mostly, the model was measuring how long the silence lasted.</p>
+            <p className="m-0">
+              We blanked out the silence but kept its length. The error rate stayed very low, at <Num id="voice.2b.zerosOriginal" />.
+            </p>
+            <p className="m-0">So we cut the silence off every recording, in training and in the live demo.</p>
+          </div>
+          <ForEngineers title="silence ablations">
+            <DotPlot
+              caption="EER per silence condition, sorted. Hatched: shortcut, not a result."
+              rows={SILENCE_LADDER}
+              axisMax={0.3}
               axisLabel="EER, lower is better"
               hue="spectrum"
             />
             <p className="mt-3 mb-0">
-              <Num id="voice.itw.n" /> bonafide and <Num id="voice.itw.n" /> spoof clips.
+              Duration and position carry most of the shortcut (zeros at original duration: <Num id="voice.2b.zerosOriginal" />). The
+              content of the silence carries a smaller, independent signal (<Num id="voice.2b.silenceOnly" /> from{" "}
+              <Num id="voice.2b.silenceOnlySeconds" /> of it). This experiment does not say which acoustic property.
             </p>
           </ForEngineers>
-        </EvidenceRow>
-      </Section>
+        </div>
+      </Chapter>
 
-      <Section title="Try it: score a recording" id="desk">
-        <p className="measure mt-0 mb-6">Use your own recording. No dataset recording comes with this site.</p>
-        <VoiceDesk />
-      </Section>
+      <Chapter stage={4} id="progression" className="below-fold mt-20" label="progression-h">
+        <div className="panel">
+          <h2 id="progression-h" className="mb-6 text-xl">
+            After the fix
+          </h2>
+          <p className="measure mt-0 mb-2 text-lg">
+            After the fix, the chosen model gets about <Num id="voice.2c.D.per100" /> in 100 recordings wrong.
+          </p>
+          <div className="mb-5">
+            <Meaning>
+              That is an error rate of <Num id="voice.2c.D" />. {VOICE_SCORE_MEANING}
+            </Meaning>
+          </div>
+          <DotPlot
+            caption="Error rate with the silence removed, in the order we built the models. A bracket shows the spread across three training runs."
+            rows={PROGRESSION_PLAIN}
+            axisMax={0.3}
+            axisLabel="error rate, lower is better"
+            hue="spectrum"
+          />
+          <div className="measure mt-4 grid gap-2">
+            <p className="m-0">More training data helped. Starting from a large ready-made speech model helped far more.</p>
+            <p className="m-0">We split the data our own way. So these numbers cannot be compared with published results.</p>
+          </div>
+          <ForEngineers title="model progression">
+            <DotPlot
+              caption="EER on trimmed audio, in build order. Bracket: three-seed standard deviation."
+              rows={PROGRESSION}
+              axisMax={0.3}
+              axisLabel="EER, lower is better"
+              hue="spectrum"
+            />
+            <p className="mt-3 mb-0">
+              C and D are statistically tied on every metric measured; D has half of C&apos;s head parameters (
+              <Num id="voice.params.D" /> against <Num id="voice.params.C" />), so D is served.
+            </p>
+          </ForEngineers>
+        </div>
+      </Chapter>
 
-      <Section title="Limits" id="limits">
-        <ul className="measure m-0 grid list-none gap-3 p-0">
-          <li className="rule-t pt-3">We tested on one dataset, plus a small check on a second one.</li>
-          <li className="rule-t pt-3">The fake recordings in the data date from 2019. A newer voice generator may not be caught.</li>
-          <li className="rule-t pt-3">
-            Compressed phone audio is a known weakness. A genuine voice from a phone call or a voice memo is often flagged as
-            fake, because the model learned from clean studio recordings.
-          </li>
-          <li className="rule-t pt-3">
-            The site warns when audio looks like that, and refuses a sound that is not speech. These checks are rough. They
-            miss some cases, and they do not change the score.
-          </li>
-          <li className="rule-t pt-3">
-            The warning levels were set using the same test recordings. So they do not tell you how often a real caller would be
-            wrongly flagged.
-          </li>
-          <li className="rule-t pt-3">Two further models were written but never finished a real run. They are untested, not disproven.</li>
-        </ul>
-        <ForEngineers title="limits">
-          <ul className="m-0 grid list-none gap-1.5 p-0">
-            <li>LA evaluation subset only, project split; no official-protocol number.</li>
-            <li>
-              Cross-dataset evidence is <Num id="voice.itw.total" /> In-the-Wild clips.
+      <Chapter stage={4} id="generalisation" className="below-fold mt-20" label="general-h">
+        <div className="panel">
+          <h2 id="general-h" className="mb-6 text-xl">
+            Does it still work on fakes it has never heard?
+          </h2>
+          <EvidenceRow
+            ids={["voice.gap.A", "voice.gap.A.per100", "voice.gap.D"]}
+            claim={<>We hid four kinds of fake during training. The simple model fell apart on them. The chosen model did not.</>}
+            more={
+              <>
+                On the hidden kinds, the simple model got about <Num id="voice.gap.A.per100" /> more recordings in 100 wrong. The
+                chosen model&apos;s error rate moved by <Num id="voice.gap.D" />. That is too small to tell apart from chance.
+              </>
+            }
+          >
+            <ForEngineers title="attack-disjoint test">
+              <DotPlot
+                caption="Unseen-minus-seen EER on four held-out attack systems (A07, A12, A14, A15). Brackets: 95% bootstrap intervals."
+                rows={ATTACK_GAP}
+                axisMax={0.3}
+                axisLabel="change in EER"
+                hue="spectrum"
+                signedAxis
+              />
+            </ForEngineers>
+          </EvidenceRow>
+          <EvidenceRow
+            ids={["voice.itw.A.per100", "voice.itw.D.per100", "voice.itw.A", "voice.itw.D", "voice.itw.total"]}
+            claim={<>On a completely different set of recordings, the simple model was worse than guessing. The chosen model held up.</>}
+            more={
+              <>
+                The simple model got about <Num id="voice.itw.A.per100" /> in 100 wrong. The chosen model got about{" "}
+                <Num id="voice.itw.D.per100" /> in 100 wrong. This test used only <Num id="voice.itw.total" /> recordings, so treat
+                it as a rough check.
+              </>
+            }
+          >
+            <ForEngineers title="cross-dataset test">
+              <DotPlot
+                caption="EER on In-the-Wild (balanced sample). Brackets: 95% intervals. C and D do not differ significantly."
+                rows={IN_THE_WILD}
+                axisMax={1}
+                axisLabel="EER, lower is better"
+                hue="spectrum"
+              />
+              <p className="mt-3 mb-0">
+                <Num id="voice.itw.n" /> bonafide and <Num id="voice.itw.n" /> spoof clips.
+              </p>
+            </ForEngineers>
+          </EvidenceRow>
+        </div>
+      </Chapter>
+
+      <Chapter stage={4} id="limits" className="below-fold mt-20" label="limits-h">
+        <div className="panel">
+          <h2 id="limits-h" className="mb-6 text-xl">
+            Limits
+          </h2>
+          <ul className="measure m-0 grid list-none gap-3 p-0">
+            <li className="rule-t pt-3">We tested on one dataset, plus a small check on a second one.</li>
+            <li className="rule-t pt-3">The fake recordings in the data date from 2019. A newer voice generator may not be caught.</li>
+            <li className="rule-t pt-3">
+              Compressed phone audio is a known weakness. A genuine voice from a phone call or a voice memo is often flagged as
+              fake, because the model learned from clean studio recordings.
             </li>
-            <li>Verdict thresholds are in-sample: set on the same test scores the EER is reported on.</li>
-            <li>Single-seed serving: the API loads seed 42 of Model D; the reported figure is a three-seed mean.</li>
-            <li>
-              Codec sensitivity: a small self-test (not an accuracy measurement) saw genuine AAC-compressed recordings flagged
-              as spoof. No codec augmentation was used in training. Details: docs/SELF_TEST_REPORT.md.
+            <li className="rule-t pt-3">
+              The site warns when audio looks like that, and refuses a sound that is not speech. These checks are rough. They
+              miss some cases, and they do not change the score.
             </li>
-            <li>
-              Audio guard (serving/audio_guard.py): a spectral-movement speech check and a high-frequency band-limit check,
-              both thresholds fixed once from a handful of local clips. A heuristic, not a validated detector. The band-limit
-              warning fires on telephone-band audio and on low-pass MP3, and did not fire on clean clips re-encoded as AAC at
-              voice-memo quality or as low-bitrate Opus, which the model still scored lower. The speech check passes a
-              synthetic frequency sweep and can reject speech buried in noise. Neither changes the score or the thresholds.
-              Calibration: docs/PHASE_2_STATUS_REPORT.md.
+            <li className="rule-t pt-3">
+              The warning levels were set using the same test recordings. So they do not tell you how often a real caller would be
+              wrongly flagged.
             </li>
-            <li>Models E (BiLSTM on frozen tokens) and F (on-the-fly augmentation) never completed a real run: untested, not disproven.</li>
+            <li className="rule-t pt-3">Two further models were written but never finished a real run. They are untested, not disproven.</li>
           </ul>
-        </ForEngineers>
-        <ForEngineers title="glossary">
-          <Glossary terms={GLOSSARY} />
-        </ForEngineers>
-      </Section>
+          <ForEngineers title="limits">
+            <ul className="m-0 grid list-none gap-1.5 p-0">
+              <li>LA evaluation subset only, project split; no official-protocol number.</li>
+              <li>
+                Cross-dataset evidence is <Num id="voice.itw.total" /> In-the-Wild clips.
+              </li>
+              <li>Verdict thresholds are in-sample: set on the same test scores the EER is reported on.</li>
+              <li>Single-seed serving: the API loads seed 42 of Model D; the reported figure is a three-seed mean.</li>
+              <li>
+                Codec sensitivity: a small self-test (not an accuracy measurement) saw genuine AAC-compressed recordings flagged
+                as spoof. The served model used no codec augmentation in training. Details: docs/SELF_TEST_REPORT.md.
+              </li>
+              <li>
+                Audio guard (serving/audio_guard.py): a spectral-movement speech check and a high-frequency band-limit check,
+                both thresholds fixed once from a handful of local clips. A heuristic, not a validated detector. The band-limit
+                warning fires on telephone-band audio and on low-pass MP3, and did not fire on clean clips re-encoded as AAC at
+                voice-memo quality or as low-bitrate Opus, which the model still scored lower. The speech check passes a
+                synthetic frequency sweep and can reject speech buried in noise. Neither changes the score or the thresholds.
+                Calibration: docs/PHASE_2_STATUS_REPORT.md.
+              </li>
+              <li>Models E (BiLSTM on frozen tokens) and F (on-the-fly augmentation) never completed a real run: untested, not disproven.</li>
+            </ul>
+          </ForEngineers>
+          <ForEngineers title="glossary">
+            <Glossary terms={GLOSSARY} />
+          </ForEngineers>
+        </div>
+      </Chapter>
     </EngineerLayer>
   );
 }
