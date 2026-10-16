@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CaseCard, DemoState, ModelInUse, RecordingBanner, errorText, isRecording, useHealth } from "../components/caseParts";
 import { ClipInput } from "../components/clip";
@@ -11,6 +11,7 @@ import { evidence } from "../data/evidence";
 import examples from "../data/examples.json";
 import { api, readCallLog, startCallLog, type ApiCall, type CaseScore, type GraphScore } from "../lib/api";
 import type { Clip } from "../lib/audio";
+import { clearCase, publishCase } from "../world/caseData";
 import { Chapter, useResetStage } from "../world/chapters";
 
 const UNIT_TICKS = [
@@ -120,7 +121,7 @@ function EngineCards() {
   );
 }
 
-export function CaseDesk() {
+export function CaseDesk({ onScored }: { onScored?: (graph: GraphScore, fused: CaseScore | null, masked: boolean) => void } = {}) {
   const health = useHealth();
   const [nodeId, setNodeId] = useState<number>(examples.transactions[0].id);
   const [clip, setClip] = useState<Clip | null>(null);
@@ -130,6 +131,18 @@ export function CaseDesk() {
   const [fused, setFused] = useState<CaseScore | null>(null);
   const [calls, setCalls] = useState<ApiCall[]>([]);
   const mask = isRecording(health);
+
+  // The balance behind the page tilts from this case. In recording mode the transaction's score is not passed on.
+  useEffect(() => {
+    publishCase({
+      graph: mask ? null : graph?.score ?? null,
+      voice: fused?.voice.score ?? null,
+      masked: mask && !!graph,
+      weightGraph: fused?.fusion.weights.graph ?? 0.5,
+      weightVoice: fused?.fusion.weights.voice ?? 0.5,
+    });
+  }, [graph, fused, mask]);
+  useEffect(() => clearCase, []);
 
   async function score() {
     setLoading(true);
@@ -142,8 +155,11 @@ export function CaseDesk() {
         const result = await api.caseScore(nodeId, clip.wav, clip.name);
         setFused(result);
         setGraph(result.graph);
+        onScored?.(result.graph, result, mask);
       } else {
-        setGraph(await api.graphScore(nodeId));
+        const g = await api.graphScore(nodeId);
+        setGraph(g);
+        onScored?.(g, null, mask);
       }
     } catch (e) {
       setError(errorText(e));
