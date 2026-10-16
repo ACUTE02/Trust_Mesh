@@ -155,3 +155,8 @@ main[data-fade="1"] { animation: page-fade 280ms both; }
 [data-kinetic="wipe"][data-visible="1"] .kt-mask { clip-path: inset(0 0 0 0); }
 [data-kinetic="wipe"] .kt-word { transform: none; transition: none; }
 @media (prefers-reduced-motion: reduce) { .kt-word { transform: none; transition: none; } [data-kinetic="wipe"] .kt-mask { clip-path: none; } }
+
+/* Evidence: the card turns over (a short flip), and is simply shown with reduced motion. */
+.flip-in { animation: flip-in 420ms cubic-bezier(.4,0,.2,1) both; transform-origin: 50% 50%; }
+@keyframes flip-in { from { transform: perspective(600px) rotateX(-70deg); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .flip-in { animation: none; } }

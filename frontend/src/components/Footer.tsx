@@ -74,8 +74,13 @@ export function Footer({ world }: { world: WorldId }) {
         )}
         <h2 className="mb-4 text-lg">How to read the marks</h2>
         <Legend />
-        <h2 className="mt-16 mb-5 border-t border-rule pt-10 text-lg">Datasets and citations</h2>
-        <DatasetCitations />
+        {/* The Archive and the Workbench carry their own datasets-and-citations section, so the footer does not repeat it there. */}
+        {world !== "evidence" && world !== "about" && (
+          <>
+            <h2 className="mt-16 mb-5 border-t border-rule pt-10 text-lg">Datasets and citations</h2>
+            <DatasetCitations />
+          </>
+        )}
         <p className="mt-12 mb-0 text-sm">
           Built by Ayushmaan Gupta, B.Tech CSE (AI &amp; ML), VIT Bhopal.{" "}
           <a href="https://github.com/ACUTE02" rel="noreferrer">

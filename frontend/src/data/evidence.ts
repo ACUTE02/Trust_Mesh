@@ -4,7 +4,7 @@
 // number that did not come from here (or live from the API).
 import raw from "./evidence.json";
 
-export type Phase = "P1" | "P1B" | "P1C" | "P1D" | "P2" | "P2B" | "P2C" | "INFRA";
+export type Phase = "P1" | "P1B" | "P1C" | "P1D" | "P2" | "P2B" | "P2C" | "P2D" | "INFRA";
 
 export interface Evidence {
   value: number | null; // null = not yet run
@@ -80,5 +80,6 @@ export const PHASE_NAMES: Record<Phase, string> = {
   P2: "Phase 2: first voice run",
   P2B: "Phase 2B: voice depth pass",
   P2C: "Phase 2C: voice head ablation",
+  P2D: "Phase 2D: voice head trained on compressed copies",
   INFRA: "Serving layer",
 };
