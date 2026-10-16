@@ -1,6 +1,6 @@
 @import "tailwindcss";
-@import "@fontsource-variable/schibsted-grotesk/wght.css";
-@import "@fontsource-variable/martian-mono/wght.css";
+@import "./fonts.css";
+@import "./worlds.css";
 
 /* Tokens. Light is the base; dark is the same system re-toned, not a different look.
    Marker yellow is only ever a fill behind Graphite text (--marker-ink), in both themes. */
@@ -61,7 +61,7 @@
 html { background: var(--slab); }
 body {
   margin: 0;
-  background: var(--slab);
+  background: transparent;
   color: var(--ink);
   font-family: var(--font-sans);
   font-size: var(--text-base);

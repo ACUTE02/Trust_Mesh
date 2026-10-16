@@ -25,6 +25,10 @@
   ],
   "fonts": [
     {"name": "Schibsted Grotesk", "licence": "SIL Open Font License 1.1", "link": "https://github.com/schibsted/schibsted-grotesk"},
-    {"name": "Martian Mono", "licence": "SIL Open Font License 1.1", "link": "https://github.com/evilmartians/mono"}
+    {"name": "Martian Mono", "licence": "SIL Open Font License 1.1", "link": "https://github.com/evilmartians/mono"},
+    {"name": "Bricolage Grotesque", "licence": "SIL Open Font License 1.1", "link": "https://fontsource.org/fonts/bricolage-grotesque"},
+    {"name": "Fraunces", "licence": "SIL Open Font License 1.1", "link": "https://fontsource.org/fonts/fraunces"},
+    {"name": "Unbounded", "licence": "SIL Open Font License 1.1", "link": "https://fontsource.org/fonts/unbounded"},
+    {"name": "Sofia Sans Extra Condensed", "licence": "SIL Open Font License 1.1", "link": "https://fontsource.org/fonts/sofia-sans-extra-condensed"}
   ]
 }

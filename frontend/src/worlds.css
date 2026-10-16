@@ -1,0 +1,156 @@
+/* World palettes (one block per world and theme) and the shared layout of the immersive pages.
+   The 3D scenes read these same variables (src/world/palettes.ts), so there is one palette per world.
+   Every text colour below was checked for 4.5:1 against the slab and sheet of its own block (scripts/contrast.mjs). */
+
+html:not([data-world]), html[data-world="lost"] { --font-display: "Bricolage Grotesque Variable", var(--font-sans); }
+html[data-world="home"], html[data-world="lost"] { --font-display: "Bricolage Grotesque Variable", var(--font-sans); }
+html[data-world="graph"] { --font-display: "Fraunces Variable", Georgia, serif; }
+html[data-world="voice"] { --font-display: "Unbounded Variable", var(--font-sans); --display-track: -0.02em; }
+html[data-world="case"] { --font-display: "Sofia Sans Extra Condensed Variable", var(--font-sans); --display-track: 0.01em; }
+html[data-world="evidence"] { --font-display: "Fraunces Variable", Georgia, serif; }
+html[data-world="about"] { --font-display: "Martian Mono Variable", var(--font-mono); --display-track: -0.04em; }
+
+/* ---- Home: The Mesh. Night, amber thread. Bone paper with ink threads in light. ---- */
+html[data-world="home"][data-theme="dark"], html[data-world="lost"][data-theme="dark"], html:not([data-world])[data-theme="dark"] {
+  --slab: #0b0f1a; --sheet: #151b2b; --ink: #ece9e1; --ink-soft: #b9bdc9; --rule: #2c3550; --track: #2a3350;
+  --ledger: #3fb3a8; --spectrum: #d58bc6; --flag: #ef8a6f;
+  --accent: #f2a93b; --accent-2: #7fb7ff; --thread: #f2b95a; --glow: #f2a93b;
+}
+html[data-world="home"][data-theme="light"], html[data-world="lost"][data-theme="light"], html:not([data-world])[data-theme="light"] {
+  --slab: #ece8dc; --sheet: #f6f3ea; --ink: #1a1d25; --ink-soft: #454a57; --rule: #c3bdac; --track: #d3cfc2;
+  --ledger: #0b6b63; --spectrum: #7b2f69; --flag: #a63d2b;
+  --accent: #9a5a00; --accent-2: #1f5fae; --thread: #7a5410; --glow: #d98f1b;
+}
+
+/* ---- Graph: The Ledger. Cream paper, copper, teal ink. Aged ledger in dark. ---- */
+html[data-world="graph"][data-theme="light"] {
+  --slab: #efe6d0; --sheet: #f8f1de; --ink: #2a2017; --ink-soft: #574736; --rule: #cdbe9e; --track: #dccfae;
+  --ledger: #0b5d58; --spectrum: #6e2a5e; --flag: #a63d2b;
+  --accent: #9c4d17; --accent-2: #0b5d58; --thread: #b4652c; --glow: #d98a4e;
+}
+html[data-world="graph"][data-theme="dark"] {
+  --slab: #1b1511; --sheet: #261d17; --ink: #eadcc6; --ink-soft: #c0ae93; --rule: #4d3c2e; --track: #3a2d23;
+  --ledger: #4fb5ab; --spectrum: #c77bb4; --flag: #e0745f;
+  --accent: #e3924f; --accent-2: #4fb5ab; --thread: #d98a4e; --glow: #f0a96a;
+}
+
+/* ---- Voice: The Terrain. Thermal colours on dark; a topographic map on paper in light. ---- */
+html[data-world="voice"][data-theme="dark"] {
+  --slab: #08060f; --sheet: #130f22; --ink: #efeaff; --ink-soft: #bdb5d6; --rule: #34294f; --track: #2a2142;
+  --ledger: #3fb3a8; --spectrum: #ff8fb8; --flag: #ff8a6b;
+  --accent: #ff9d3d; --accent-2: #6ea8ff; --thread: #ffb347; --glow: #ff7a59;
+}
+html[data-world="voice"][data-theme="light"] {
+  --slab: #e8e4d8; --sheet: #f4f1e7; --ink: #1c2330; --ink-soft: #46506a; --rule: #bdb8a6; --track: #d2cebf;
+  --ledger: #0b6b63; --spectrum: #8a2f5d; --flag: #a63d2b;
+  --accent: #a8430d; --accent-2: #1f4f8f; --thread: #1c2330; --glow: #c05a20;
+}
+
+/* ---- Case: The Balance. Brushed steel, signal red, brass. Gunmetal in dark. ---- */
+html[data-world="case"][data-theme="light"] {
+  --slab: #d9dcde; --sheet: #eceeef; --ink: #1e2328; --ink-soft: #444c54; --rule: #aeb4b8; --track: #c6cacd;
+  --ledger: #0b6b63; --spectrum: #6e2a5e; --flag: #b3281c;
+  --accent: #b3281c; --accent-2: #8a6416; --thread: #6f7881; --glow: #c9a24a;
+}
+html[data-world="case"][data-theme="dark"] {
+  --slab: #14181c; --sheet: #1d2329; --ink: #e4e8ea; --ink-soft: #b0b8be; --rule: #3a434b; --track: #2b333a;
+  --ledger: #3fb3a8; --spectrum: #c77bb4; --flag: #ff6f5e;
+  --accent: #ff6f5e; --accent-2: #d4ad55; --thread: #8e99a3; --glow: #ffb347;
+}
+
+/* ---- Evidence: The Archive. Off-white and archival green, kraft. Deep museum green in dark. ---- */
+html[data-world="evidence"][data-theme="light"] {
+  --slab: #e8ebe1; --sheet: #f5f6ef; --ink: #1d2a21; --ink-soft: #435247; --rule: #bcc4b3; --track: #d3d8c9;
+  --ledger: #2f5d46; --spectrum: #6e2a5e; --flag: #a63d2b;
+  --accent: #2f5d46; --accent-2: #8a6a34; --thread: #7a6a4a; --glow: #c9a46a;
+}
+html[data-world="evidence"][data-theme="dark"] {
+  --slab: #0e1a14; --sheet: #15261d; --ink: #e0eadd; --ink-soft: #aebfae; --rule: #2d4a3a; --track: #223a2d;
+  --ledger: #5fbf8f; --spectrum: #c77bb4; --flag: #e0745f;
+  --accent: #6fcf9f; --accent-2: #d3ad73; --thread: #b59a6a; --glow: #e0bf85;
+}
+
+/* ---- About: The Workbench. Blueprint: white lines on blue in dark, blue lines on white in light. ---- */
+html[data-world="about"][data-theme="dark"] {
+  --slab: #0e3466; --sheet: #13427f; --ink: #eaf2ff; --ink-soft: #c3d6f2; --rule: #5a86c4; --track: #1d4f8f;
+  --ledger: #8fe0d5; --spectrum: #f0b4e0; --flag: #ffb4a2;
+  --accent: #ffffff; --accent-2: #ffd45a; --thread: #cfe3ff; --glow: #9cc4ff;
+}
+html[data-world="about"][data-theme="light"] {
+  --slab: #f3f6fb; --sheet: #ffffff; --ink: #0e3466; --ink-soft: #345b8e; --rule: #9fb7d6; --track: #d5e0ee;
+  --ledger: #0b6b63; --spectrum: #7b2f69; --flag: #a63d2b;
+  --accent: #0e3466; --accent-2: #a5600f; --thread: #1d5aa8; --glow: #4a88d8;
+}
+
+/* ---- Shared layout ---- */
+html { background: var(--slab); }
+body { background: transparent; position: relative; min-height: 100vh; }
+/* The page's own backdrop: a CSS gradient that shows at once, before any 3D work, and under the canvas. */
+.backdrop {
+  position: fixed; inset: 0; z-index: -2;
+  background:
+    radial-gradient(60rem 38rem at 78% 8%, color-mix(in srgb, var(--glow) 16%, transparent), transparent 70%),
+    radial-gradient(50rem 40rem at 6% 92%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 70%),
+    var(--slab);
+  transition: background-color 400ms;
+}
+#stage { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+#stage canvas { display: block; width: 100%; height: 100%; }
+
+h1, h2, h3 { font-family: var(--font-display, var(--font-sans)); letter-spacing: var(--display-track, -0.01em); }
+html[data-world="graph"] h1, html[data-world="graph"] h2, html[data-world="evidence"] h1, html[data-world="evidence"] h2 { font-weight: 560; }
+html[data-world="case"] h1, html[data-world="case"] h2 { font-weight: 650; text-transform: uppercase; }
+html[data-world="voice"] h1 { font-size: clamp(1.6rem, 1rem + 2.2vw, 2.7rem); }
+
+/* Text over a scene sits on a scrim: the slab colour at 90 percent, so contrast does not depend on what is drawn behind. */
+.scrim { background: color-mix(in srgb, var(--slab) 90%, transparent); }
+.scrim-sheet { background: color-mix(in srgb, var(--sheet) 92%, transparent); }
+.panel { background: color-mix(in srgb, var(--slab) 94%, transparent); padding: 1.25rem; border: 1px solid var(--rule); }
+@media (min-width: 640px) { .panel { padding: 2rem; } }
+
+.hero { min-height: min(100svh, 56rem); display: grid; align-content: end; padding-bottom: 4rem; padding-top: 6rem; }
+.chapter { min-height: 90svh; display: grid; align-content: center; padding: 3rem 0; }
+.chapter-card { max-width: 36rem; padding: 1.25rem 1.5rem; }
+.below-fold { content-visibility: auto; contain-intrinsic-size: auto 700px; }
+
+/* Header and the thread */
+.site-header { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--slab) 86%, transparent); }
+.thread-line { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; pointer-events: none; }
+.thread-line svg { display: block; width: 100%; height: 6px; overflow: visible; }
+
+/* Page transition curtain: one shape per world, always carrying the thread across. */
+.curtain { position: fixed; inset: 0; z-index: 50; pointer-events: none; background: var(--slab); opacity: 0; }
+.curtain[data-run="1"] { animation: curtain-in var(--t, 800ms) both; }
+.curtain-thread { position: fixed; left: 0; right: 0; top: 50%; z-index: 51; height: 3px; pointer-events: none; background: var(--thread); transform: scaleX(0); transform-origin: left; opacity: 0; }
+.curtain-thread[data-run="1"] { animation: thread-across var(--t, 800ms) both; }
+@keyframes curtain-in { 0% { opacity: 0; } 40%, 60% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes thread-across { 0% { transform: scaleX(0); opacity: 1; } 55% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
+/* Per-world exits: the curtain is a different shape. */
+html[data-to="home"] .curtain[data-run="1"] { clip-path: circle(150% at 50% 50%); }
+html[data-to="graph"] .curtain[data-run="1"] { animation-timing-function: steps(8, end); }
+html[data-to="voice"] .curtain[data-run="1"] { animation-timing-function: cubic-bezier(.3,1.6,.5,.9); }
+html[data-to="case"] .curtain[data-run="1"] { animation-timing-function: steps(3, jump-end); }
+html[data-to="evidence"] .curtain[data-run="1"] { transform-origin: top; animation-name: curtain-drawer; }
+html[data-to="about"] .curtain[data-run="1"] { background: repeating-linear-gradient(90deg, var(--slab) 0 38px, var(--rule) 38px 39px); }
+@keyframes curtain-drawer { 0% { opacity: 1; transform: translateY(-100%); } 45%, 60% { opacity: 1; transform: translateY(0); } 100% { opacity: 1; transform: translateY(100%); } }
+
+/* Reduced motion: a designed calm version. No parallax, no curtain; a short crossfade. */
+@media (prefers-reduced-motion: reduce) {
+  .curtain, .curtain-thread { display: none; }
+  main { animation: none; }
+}
+main[data-fade="1"] { animation: page-fade 280ms both; }
+@keyframes page-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* Interaction extras (desktop only) */
+.magnetic { transition: transform 180ms cubic-bezier(.2,.8,.2,1); will-change: transform; }
+.cursor-label { position: fixed; left: 0; top: 0; z-index: 60; pointer-events: none; font: 600 0.75rem var(--font-mono); background: var(--marker); color: var(--marker-ink); padding: 0.3rem 0.5rem; clip-path: polygon(0 0, calc(100% - 0.4rem) 0, 100% 0.4rem, 100% 100%, 0 100%); opacity: 0; transform: translate3d(-100px,-100px,0); transition: opacity 160ms; }
+
+/* KineticText */
+.kt-mask { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.12em; margin-bottom: -0.12em; }
+.kt-word { display: inline-block; transform: translateY(105%); transition: transform 700ms cubic-bezier(.2,.8,.2,1); }
+[data-visible="1"] .kt-word { transform: none; }
+[data-kinetic="wipe"] .kt-mask { clip-path: inset(0 100% 0 0); transition: clip-path 800ms cubic-bezier(.7,0,.2,1); }
+[data-kinetic="wipe"][data-visible="1"] .kt-mask { clip-path: inset(0 0 0 0); }
+[data-kinetic="wipe"] .kt-word { transform: none; transition: none; }
+@media (prefers-reduced-motion: reduce) { .kt-word { transform: none; transition: none; } [data-kinetic="wipe"] .kt-mask { clip-path: none; } }
