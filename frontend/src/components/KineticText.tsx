@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ElementType } from "react";
+import { Fragment, useEffect, useRef, useState, type ElementType } from "react";
 import { readPrefs } from "../world/prefs";
 
 // Kinetic type that keeps the text real: the words stay in the DOM as ordinary text, so reading, searching and
@@ -55,12 +55,14 @@ export function KineticText({
   return (
     <Tag ref={ref} className={className} data-kinetic={mode} data-visible={visible ? "1" : "0"}>
       {words.map((w, i) => (
-        <span key={i} className="kt-mask">
-          <span className="kt-word" style={{ transitionDelay: `${delay + (mode === "wipe" ? 0 : i * 45)}ms` }}>
-            {w}
+        <Fragment key={i}>
+          <span className="kt-mask">
+            <span className="kt-word" style={{ transitionDelay: `${delay + (mode === "wipe" ? 0 : i * 45)}ms` }}>
+              {w}
+            </span>
           </span>
           {i < words.length - 1 ? " " : ""}
-        </span>
+        </Fragment>
       ))}
     </Tag>
   );

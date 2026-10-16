@@ -3,13 +3,15 @@ import { Link } from "react-router-dom";
 import { CaseCard, DemoState, ModelInUse, RecordingBanner, errorText, isRecording, useHealth } from "../components/caseParts";
 import { ClipInput } from "../components/clip";
 import { EngineerLayer, EngineerToggle, ForEngineers, GRAPH_SCORE_MEANING, Meaning, VOICE_SCORE_MEANING } from "../components/engineers";
-import { Marker, Num, Section } from "../components/evidence";
+import { Marker, Num } from "../components/evidence";
 import { TechView } from "../components/TechView";
+import { KineticText } from "../components/KineticText";
 import { TwoScoresInstrument } from "../components/TwoScoresInstrument";
 import { evidence } from "../data/evidence";
 import examples from "../data/examples.json";
 import { api, readCallLog, startCallLog, type ApiCall, type CaseScore, type GraphScore } from "../lib/api";
 import type { Clip } from "../lib/audio";
+import { Chapter, useResetStage } from "../world/chapters";
 
 const UNIT_TICKS = [
   { at: 0, label: "0" },
@@ -347,60 +349,167 @@ function EngineersLanding() {
 }
 
 export function Landing() {
+  useResetStage();
   return (
     <EngineerLayer page="landing">
-      <section className="grid items-start gap-x-12 gap-y-10 pt-14 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]" aria-labelledby="hero-h">
-        <div>
+      <Chapter stage={0} className="hero" label="hero-h">
+        <div className="scrim chapter-card">
           <h1 id="hero-h" style={{ fontSize: "var(--text-hero)" }}>
-            Same model. Tested two ways. The honest way scores much lower.
+            <KineticText text="Two checks for fraud, and the evidence for how far to trust each one." />
           </h1>
-          <p className="measure mt-6 mb-0 text-lg">TrustMesh is a student project about catching fraud.</p>
-          <p className="measure mt-2 mb-0">It shows what each check found, and how far to trust it.</p>
+          <p className="measure mt-5 mb-0 text-lg">TrustMesh is a student project. It shows what each check found, and where it fails.</p>
+          <ul className="m-0 mt-6 grid list-none gap-2 p-0 text-sm">
+            <li className="flex items-center gap-3">
+              <span className="fill-ledger inline-block h-3 w-10 shrink-0" aria-hidden />
+              <span>
+                <strong className="font-semibold">Graph Engine.</strong> Checks a transaction by who it is connected to. Measured.
+              </span>
+            </li>
+            <li className="flex items-center gap-3">
+              <span className="fill-spectrum inline-block h-3 w-10 shrink-0" aria-hidden />
+              <span>
+                <strong className="font-semibold">Voice Engine.</strong> Listens for signs a voice is computer-made. Measured.
+              </span>
+            </li>
+            <li className="planned flex items-center gap-3 p-2">
+              <span className="planned inline-block h-3 w-10 shrink-0" aria-hidden />
+              <span>
+                <strong className="font-semibold">Visual Engine.</strong> Pictures and video. Designed, not built. No results yet.
+              </span>
+            </li>
+          </ul>
         </div>
-        <SplitInstrument />
-      </section>
+      </Chapter>
 
-      <Section title="What TrustMesh does" id="what">
-        <ul className="measure m-0 grid list-none gap-3 p-0 text-lg">
-          <li>It checks a transaction by looking at who it is connected to.</li>
-          <li>It checks a voice recording for signs that it is fake.</li>
-          <li>It combines the two into one warning. That part is a demonstration only.</li>
-        </ul>
-      </Section>
+      <Chapter stage={1} className="chapter" label="why-h">
+        <div className="scrim chapter-card">
+          <h2 id="why-h" className="text-xl">
+            <KineticText text="Why two kinds of evidence" />
+          </h2>
+          <p className="measure mt-4 mb-0">
+            A transaction is a web: who paid whom. A voice is a wave: sound changing over time. One check cannot look at both,
+            so TrustMesh has one for each. What they share is how they are judged: on data kept back from training.
+          </p>
+        </div>
+      </Chapter>
 
-      <Section title="What each check scored" id="engines">
-        <EngineCards />
-      </Section>
+      <Chapter stage={2} className="chapter" label="f1-h">
+        <div className="scrim chapter-card">
+          <p className="m-0 mb-3">
+            <Marker ids={["graph.sage.random", "graph.sage.temporal"]} />
+          </p>
+          <h2 id="f1-h" className="text-xl">
+            <KineticText text="A random test flatters the model." />
+          </h2>
+          <p className="measure mt-4 mb-0">
+            The same model scored <Num id="graph.sage.random" spread={false} /> when the test used transactions from the
+            period it learned from, and <Num id="graph.sage.temporal" spread={false} /> when it was tested on later ones. Real
+            fraud checking is the second case. The first number is the leak: future transactions inside the past.
+          </p>
+        </div>
+      </Chapter>
 
-      <Section title="Try it: one case, two checks" id="case-desk">
-        <p className="measure mt-0 mb-6">Pick a transaction. Add a voice recording if you have one. Then score the case.</p>
-        <CaseDesk />
-      </Section>
+      <Chapter stage={3} className="chapter" label="f2-h">
+        <div className="scrim chapter-card">
+          <p className="m-0 mb-3">
+            <Marker ids={["voice.p2.untrimmed.per100", "voice.p2.trimmed.per100"]} />
+          </p>
+          <h2 id="f2-h" className="text-xl">
+            <KineticText text="The first voice model listened to the silence." />
+          </h2>
+          <p className="measure mt-4 mb-3">
+            While the quiet at the start of each recording was left in, it got <Num id="voice.p2.untrimmed.per100" /> in 100
+            recordings wrong. With that silence removed, it got <Num id="voice.p2.trimmed.per100" /> in 100 wrong.
+          </p>
+          <p className="m-0 flex items-center gap-3 text-sm">
+            <span className="fill-shortcut inline-block h-3 w-10 shrink-0" aria-hidden />
+            Hatched: a shortcut, not a result. The low number was never a win.
+          </p>
+        </div>
+      </Chapter>
 
-      <Section title="What is tested, and what is not" id="status">
-        <ul className="measure m-0 grid list-none gap-0 p-0">
-          <li className="rule-t py-4">
-            <strong className="font-semibold">Measured.</strong> The transaction check and the voice check. Each was scored on
-            data kept back from training. We tested on one dataset each.
-          </li>
-          <li className="rule-t py-4">
-            <strong className="font-semibold">Demonstration only.</strong> The combined warning. It has not been tested for
-            accuracy.
-          </li>
-          <li className="py-1">
-            <div className="planned px-3 py-4 text-ink-soft">
-              <strong className="font-semibold">Visual Engine.</strong> A check for fake pictures and video. Designed, not built.
-              No results yet.
-            </div>
-          </li>
-        </ul>
-      </Section>
+      <Chapter stage={4} className="chapter" label="f3-h">
+        <div className="scrim chapter-card">
+          <p className="m-0 mb-3">
+            <Marker ids={["guard.aac.warned", "guard.aac.n", "guard.mp3.warned", "guard.clips.n"]} />
+          </p>
+          <h2 id="f3-h" className="text-xl">
+            <KineticText text="Compressed phone audio is a known weakness." />
+          </h2>
+          <p className="measure mt-4 mb-3">
+            Genuine speech that has been squeezed, as a phone call or voice message is, can be flagged as fake. The site warns
+            when audio looks like that. The warning caught <Num id="guard.mp3.warned" /> of <Num id="guard.clips.n" /> clips
+            squeezed as MP3 at 128 kb/s, but <Num id="guard.aac.warned" /> of <Num id="guard.aac.n" /> squeezed as AAC at 32
+            kb/s or Opus at 24 kb/s.
+          </p>
+          <p className="m-0 text-sm">
+            <Link to="/voice#phone">See what compression does to genuine speech.</Link>
+          </p>
+        </div>
+      </Chapter>
 
-      <Section title="For engineers" id="engineers">
-        <p className="measure mt-0 mb-4 text-sm text-ink-soft">The system, its size, how it was checked, and the main design decisions.</p>
-        <EngineerToggle />
-        <EngineersLanding />
-      </Section>
+      <Chapter stage={5} id="engines" className="below-fold mt-24" label="engines-h">
+        <div className="panel">
+          <h2 id="engines-h" className="mb-2 text-xl">
+            What each check scored
+          </h2>
+          <p className="measure mt-0 mb-8 text-sm text-ink-soft">Each score was measured on data kept back from training, on one dataset each.</p>
+          <EngineCards />
+          <div className="mt-12">
+            <SplitInstrument />
+          </div>
+        </div>
+      </Chapter>
+
+      <Chapter stage={5} id="case-desk" className="below-fold mt-20" label="try-h">
+        <div className="panel">
+          <h2 id="try-h" className="mb-3 text-xl">
+            Try it: one case, two checks
+          </h2>
+          <p className="measure mt-0 mb-6">Pick a transaction. Add a voice recording if you have one. Then score the case.</p>
+          <CaseDesk />
+          <p className="mt-8 mb-0 flex flex-wrap gap-x-8 gap-y-2 text-sm">
+            <Link to="/graph">Open the transaction desk</Link>
+            <Link to="/voice">Open the voice desk</Link>
+            <Link to="/case">Open the case desk</Link>
+          </p>
+        </div>
+      </Chapter>
+
+      <Chapter stage={5} id="status" className="below-fold mt-20" label="status-h">
+        <div className="panel">
+          <h2 id="status-h" className="mb-6 text-xl">
+            What is tested, and what is not
+          </h2>
+          <ul className="measure m-0 grid list-none gap-0 p-0">
+            <li className="rule-t py-4">
+              <strong className="font-semibold">Measured.</strong> The transaction check and the voice check. Each was scored on
+              data kept back from training. We tested on one dataset each.
+            </li>
+            <li className="rule-t py-4">
+              <strong className="font-semibold">Demonstration only.</strong> The combined warning. It has not been tested for
+              accuracy.
+            </li>
+            <li className="py-1">
+              <div className="planned px-3 py-4 text-ink-soft">
+                <strong className="font-semibold">Visual Engine.</strong> A check for fake pictures and video. Designed, not
+                built. No results yet.
+              </div>
+            </li>
+          </ul>
+        </div>
+      </Chapter>
+
+      <Chapter stage={5} id="engineers" className="below-fold mt-20" label="eng-h">
+        <div className="panel">
+          <h2 id="eng-h" className="mb-6 text-xl">
+            For engineers
+          </h2>
+          <p className="measure mt-0 mb-4 text-sm text-ink-soft">The system, its size, how it was checked, and the main design decisions.</p>
+          <EngineerToggle />
+          <EngineersLanding />
+        </div>
+      </Chapter>
     </EngineerLayer>
   );
 }

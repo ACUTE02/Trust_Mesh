@@ -10,16 +10,18 @@ export interface ScenePalette {
   thread: Color;
   glow: Color;
   flag: Color;
+  ledger: Color;
+  spectrum: Color;
 }
 
 export const palette: ScenePalette = {
   bg: new Color(), ink: new Color(), accent: new Color(), accent2: new Color(),
-  thread: new Color(), glow: new Color(), flag: new Color(),
+  thread: new Color(), glow: new Color(), flag: new Color(), ledger: new Color(), spectrum: new Color(),
 };
 
 const MAP: [keyof ScenePalette, string][] = [
   ["bg", "--slab"], ["ink", "--ink"], ["accent", "--accent"], ["accent2", "--accent-2"],
-  ["thread", "--thread"], ["glow", "--glow"], ["flag", "--flag"],
+  ["thread", "--thread"], ["glow", "--glow"], ["flag", "--flag"], ["ledger", "--ledger"], ["spectrum", "--spectrum"],
 ];
 
 /** Copy the current CSS variables into the shared colours. Call after the theme or the world changes. */

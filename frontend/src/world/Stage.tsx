@@ -35,7 +35,7 @@ function Driver({ perf }: { perf: boolean }) {
     let tierIndex = 0; // start low
     let ceiling = cap; // lowered after a demotion so the governor never flip-flops
     let frames = 0, spanStart = 0, goodWindows = 0, lastRender = 0, cooldownUntil = 0;
-    let frameMsAvg = 16, lastPerf = 0;
+    let frameMsAvg = 16, lastPerf = 0, rendersSincePerf = 0;
 
     refreshPalette();
     gl.setClearColor(palette.bg, 0);
@@ -52,6 +52,7 @@ function Driver({ perf }: { perf: boolean }) {
       advance(t * 1000, true);
       const cost = performance.now() - t0;
       frameMsAvg = frameMsAvg * 0.9 + cost * 0.1;
+      rendersSincePerf++;
 
       // Governor: judge only runs of back-to-back frames (an idle gap says nothing about speed).
       const now = performance.now();
@@ -73,11 +74,13 @@ function Driver({ perf }: { perf: boolean }) {
         frames = 0; spanStart = now;
       }
       if (perf && now - lastPerf > 500) {
-        lastPerf = now;
         const info = gl.info;
-        const snap = { fps: Math.round(1000 / Math.max(frameMsAvg, 0.1)), frameMs: +frameMsAvg.toFixed(2), calls: info.render.calls,
+        // fps is frames actually drawn per second over the last window (an idle page draws none); frameMs is the cost of one draw
+        const snap = { fps: Math.round((rendersSincePerf * 1000) / Math.max(now - lastPerf, 1)), frameMs: +frameMsAvg.toFixed(2), calls: info.render.calls,
           triangles: info.render.triangles, geometries: info.memory.geometries, textures: info.memory.textures,
           tier: TIER_ORDER[tierIndex], world: document.documentElement.dataset.world ?? "home" };
+        lastPerf = now;
+        rendersSincePerf = 0;
         window.__tmPerf = { ...snap, visits: { ...(window.__tmPerf?.visits ?? {}), [snap.world]: snap } };
       }
     });
@@ -115,6 +118,7 @@ export default function Stage() {
   }, []);
 
   return (
+    <>
     <div id="stage" aria-hidden="true">
       <Canvas
         frameloop="never"
@@ -128,7 +132,8 @@ export default function Stage() {
           <Scene key={world} />
         </Suspense>
       </Canvas>
-      {perf && <Readout />}
     </div>
+    {perf && <Readout />}
+    </>
   );
 }
