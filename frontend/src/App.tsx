@@ -44,6 +44,12 @@ function StageHost() {
 }
 
 function NotFound() {
+  // Hovering or focusing the link ties the snapped thread back to the node in the scene.
+  const tie = (tied: boolean) => {
+    live.data.lost = { tied };
+    markDirty();
+  };
+  useEffect(() => () => void (live.data.lost = undefined), []);
   return (
     <section className="hero" aria-labelledby="lost-h">
       <div className="scrim chapter-card">
@@ -52,7 +58,14 @@ function NotFound() {
         </h1>
         <p className="measure mt-4">There is no page at this address.</p>
         <p className="mb-0">
-          <Link to="/" className="font-semibold">
+          <Link
+            to="/"
+            className="font-semibold"
+            onPointerEnter={() => tie(true)}
+            onPointerLeave={() => tie(false)}
+            onFocus={() => tie(true)}
+            onBlur={() => tie(false)}
+          >
             Tie it back to the overview
           </Link>
         </p>
