@@ -1211,6 +1211,93 @@ If 1 or 2 fails, it is reported as a negative result. No retuning and re-running
 - Dataset terms: the trained head weights stay out of git until the owner has checked the dataset terms. The results file
   holds aggregates only (no clip identifiers, no per-clip scores).
 
+## Phase 2D FULL results (Kaggle run, read 2026-10-17)
+
+Source: `artifacts/voice/results_phase2d.json` (git-ignored; aggregates only) and the six head files (private). Every number
+below is copied from that file, except the last subsection, which is a separate local check and says so. The criteria were
+fixed before the run (section "Phase 2D: codec-robust voice head" above). Nothing is served from this run: the served model,
+the thresholds and the site are unchanged, and the thresholds have not been recalibrated.
+
+**The run.** Split identical to Model D's: the test-index hash and the train/val/test counts match the recorded Model D split
+(train 4099 bonafide / 16099 spoof, val 1091 / 4329, test 2165 / 8992; 0 shared speakers). All ten conditions were produced
+by the available ffmpeg with no substitution and none unavailable. 153,629 feature versions (36,775 clean, 76,854 augmented,
+40,000 evaluation), 7.87 GB planned, extraction 13,829 s (conditions 11,168 s, encoder 2,610 s, decoding 43 s), 4.15 hours in
+all. Both models have 133,402 parameters. Each condition is evaluated on the fixed subset of 4000 test clips (2165 bonafide /
+1835 spoof); "clean, full test" uses all 11,157 test clips. EER differences are F2 minus control (negative = F2 better), paired
+bootstrap, 1000 resamples; the pooled row resamples whole clips (24,000 rows).
+
+| Condition | Control EER [95% CI] | F2 EER [95% CI] | Difference [95% CI] | Genuine flagged, control / F2 |
+|---|---|---|---|---|
+| Clean, full test | 0.0254 [0.0225, 0.0285] | 0.0199 [0.0166, 0.0224] | -0.0055 [-0.0088, -0.0031] | 0.0513 / 0.0319 |
+| aac32 | 0.0360 [0.0296, 0.0431] | 0.0283 [0.0223, 0.0343] | -0.0077 [-0.0139, -0.0029] | 0.5982 / 0.0596 |
+| aac32_via48k | 0.0439 [0.0371, 0.0512] | 0.0342 [0.0278, 0.0402] | -0.0097 [-0.0161, -0.0045] | 0.9095 / 0.1012 |
+| mp3_64 | 0.0283 [0.0234, 0.0338] | 0.0262 [0.0202, 0.0305] | -0.0022 [-0.0076, +0.0016] | 0.1912 / 0.0790 |
+| opus24 | 0.0286 [0.0234, 0.0343] | 0.0263 [0.0213, 0.0309] | -0.0023 [-0.0071, +0.0022] | 0.1894 / 0.0961 |
+| echo | 0.2434 [0.2305, 0.2568] | 0.1099 [0.0993, 0.1199] | -0.1335 [-0.1483, -0.1193] | 1.0000 / 0.2402 |
+| noise_lowsnr | 0.0619 [0.0545, 0.0703] | 0.0148 [0.0114, 0.0189] | -0.0471 [-0.0545, -0.0397] | 0.2988 / 0.0240 |
+| **Pooled training-menu conditions** | 0.1622 [0.1565, 0.1681] | 0.0410 [0.0384, 0.0441] | -0.1212 [-0.1248, -0.1173] | 0.5312 / 0.1000 |
+| aac16 (held out) | 0.0910 [0.0822, 0.1008] | 0.0684 [0.0594, 0.0753] | -0.0226 [-0.0315, -0.0155] | 0.9885 / 0.4333 |
+| opus12 (held out) | 0.0409 [0.0343, 0.0474] | 0.0388 [0.0322, 0.0457] | -0.0021 [-0.0071, +0.0032] | 0.7861 / 0.4305 |
+| mulaw8k (held out) | 0.0338 [0.0273, 0.0393] | 0.0323 [0.0263, 0.0387] | -0.0015 [-0.0071, +0.0049] | 0.4000 / 0.0970 |
+| mp3_32 (held out) | 0.0322 [0.0262, 0.0387] | 0.0328 [0.0262, 0.0388] | +0.0006 [-0.0050, +0.0060] | 0.5769 / 0.0753 |
+
+"Genuine flagged" is the share of genuine test clips scored below each model's own threshold at the EER on clean validation
+clips (raw score 1.2046 for the control, 0.1938 for F2). On the same clean test clips the two models flag 0.0513 and 0.0319.
+Per-seed clean EERs: control 0.0249, 0.0259, 0.0263; F2 0.0197, 0.0203, 0.0194 (seeds 42, 43, 44).
+
+**Pre-registered criteria, read mechanically (all_pass = true).**
+1. Clean audio: F2 is not worse than the control (interval -0.0088 to -0.0031, wholly below zero). Pass.
+2. (a) No training-menu condition is worse: all six pass. On mp3_64 and opus24 the interval includes zero, so F2 is not shown
+   better there either. (b) Pooled training-menu set: the interval lies wholly below zero. Pass.
+3. Held-out conditions, reported and not judged: the interval excludes zero on one of four (aac16). On opus12, mulaw8k and
+   mp3_32 it includes zero (mp3_32's point difference is +0.0006).
+
+**Plain reading: reduced, not removed.** Training on codec-processed copies reduced the damage that compression does to genuine
+speech; it did not remove it. The share of genuine clips flagged at the clean-validation threshold fell, for example, from
+0.5982 to 0.0596 (aac32) and from 0.9095 to 0.1012 (aac32 through 48 kHz), but it is still above the clean figure of 0.0319
+for every compressed condition, and F2 remains weak on echo (EER 0.1099, 0.2402 of genuine flagged), on the held-out aac16
+(EER 0.0684, 0.4333 flagged) and on the held-out opus12 (EER 0.0388, 0.4305 flagged).
+
+**Caveats, stated plainly.**
+- **The control is not the served Model D.** The control's clean EER on the full test set is 0.0254, against 0.0166 (3-seed
+  mean) for Model D and 0.0194 for served seed 42. The control stopped early: best epoch 3, 4 and 3 for seeds 42, 43, 44 (11,
+  12, 11 epochs run), with a mixed clean-and-augmented validation EER of 0.1265, 0.1268, 0.1265. The early-stopping rule in this
+  notebook (validation that mixes clean and augmented clips, as the addendum required) is the only difference from Model D's
+  recipe that was identified; it may explain the weaker control, but that was not tested. Part of F2's apparent clean gain over
+  the control (-0.0055) therefore reflects a weak control, not a gain over served Model D.
+- **F2 on clean audio is about equal to served seed 42:** F2's clean EER is 0.0199 (seed-averaged scores) against 0.0194 for
+  served seed 42 and 0.0166 for the Model D 3-seed mean. Different score averaging; no claim that F2 is better on clean audio.
+- **Held-out codecs: ranking improved on only 1 of 4** (aac16). Not shown on opus12, mulaw8k, mp3_32.
+- **The test is synthetic.** It is ASVspoof 2019 LA evaluation-partition clips run through ffmpeg codecs and a synthetic echo
+  and noise model, on a speaker-disjoint split of the same dataset. It is not real phone calls, real rooms or another dataset.
+  It does not say how F2 does on In-the-Wild or on a real phone network.
+- The decision uses seed-averaged scores, so the three seeds are not three independent tests. Each condition uses a 4000-clip
+  subset of the test set. The "genuine flagged" shares depend on each model's own clean-validation threshold; they are not
+  the served thresholds.
+- Not done and not decided: serving F2, recalibrating thresholds, changing the site. These wait for the owner.
+
+**Local inference-only check on a few real clips (2026-10-17; not part of the results file, no training).** The three F2
+heads and the served Model D head scored the owner's own recordings (3 genuine voice memos, 3 voice clones) and the 9 genuine
+local clips (4 dataset clips, 5 LibriSpeech clips), at the served thresholds (high 0.6578, medium 0.0239 on spoof
+probability), which were not recalibrated for F2. Aggregates only; nothing per clip is kept. These are a few real clips, not
+a validated test.
+
+| Group (n) | Model | Flagged high | Flagged medium or high | Mean bonafide logit | Mean spoof probability |
+|---|---|---|---|---|---|
+| Own genuine memos (3) | served D | 1.00 | 1.00 | -10.46 | 1.000 |
+| | F2 seed 42 / 43 / 44 | 0.67 / 0.67 / 0.67 | 1.00 / 1.00 / 0.67 | -1.87 / -2.32 / +0.32 | 0.736 / 0.762 / 0.542 |
+| | F2, mean of 3 seeds | 0.67 | 1.00 | -1.29 | 0.668 |
+| Own voice clones (3) | served D | 1.00 | 1.00 | -15.08 | 1.000 |
+| | F2 seed 42 / 43 / 44 | 1.00 / 1.00 / 1.00 | 1.00 / 1.00 / 1.00 | -11.67 / -12.33 / -8.97 | 1.000 / 1.000 / 1.000 |
+| | F2, mean of 3 seeds | 1.00 | 1.00 | -10.99 | 1.000 |
+| 9 genuine local clips (9) | served D | 0.00 | 0.00 | +8.33 | 0.001 |
+| | F2 seed 42 / 43 / 44 | 0.00 / 0.00 / 0.00 | 0.00 / 0.11 / 0.00 | +10.19 / +9.19 / +12.51 | 0.001 / 0.004 / 0.001 |
+| | F2, mean of 3 seeds | 0.00 | 0.00 | +10.63 | 0.001 |
+
+Plain reading: on the owner's three phone-recorded genuine memos F2 moves the mean score from strongly "fake" towards the
+middle, but 2 of 3 memos are still in the high band; F2 still flags all three voice clones; and it does not flag the 9 genuine
+clean clips. Three memos cannot support any rate.
+
 ## Open items (not yet built)
 
 - `engines/graph/`: built for everything Phase 1D uses. The Phase 1–1C-only pieces (GAT, GIN,
