@@ -30,7 +30,7 @@ OUT = ROOT / "data" / "self_test"
 BROWSERS = [r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
             r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
             r"C:\Program Files\Google\Chrome\Application\chrome.exe"]
-PAGES = {"landing": "/", "graph": "/graph", "voice": "/voice"}
+PAGES = {"landing": "/", "graph": "/graph", "voice": "/voice", "case": "/case", "evidence": "/evidence", "about": "/about", "lost": "/not-a-page"}
 AXE = ROOT / "frontend" / "node_modules" / "axe-core" / "axe.min.js"
 
 DESCRIBE = """(() => { const e = document.activeElement; if (!e || e === document.body) return null;

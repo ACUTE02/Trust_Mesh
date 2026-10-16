@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BROWSERS = [r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
             r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
             r"C:\Program Files\Google\Chrome\Application\chrome.exe"]
-PAGES = {"landing": "/", "graph": "/graph", "voice": "/voice"}
+PAGES = {"landing": "/", "graph": "/graph", "voice": "/voice", "case": "/case", "evidence": "/evidence", "about": "/about", "lost": "/not-a-page"}
 WIDTHS = (390, 768, 1440)
 PORT = 9333
 

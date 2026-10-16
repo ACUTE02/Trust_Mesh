@@ -10,12 +10,13 @@ const STEPS: { title: string; body: string; command?: string }[] = [
   },
   {
     title: "Start everything",
-    body: "One command starts the graph database, loads it, starts the scoring service and serves the site on port 8080. On Windows, start.bat does the same.",
+    body: "One command starts the graph database, loads it, starts the scoring service and serves the site. On Windows, start.bat does the same.",
     command: "docker compose up --build",
   },
   {
     title: "Open the site and the API docs",
-    body: "The site is at http://localhost:8080. The scoring service documents itself at http://localhost:8000/docs.",
+    body: "The site is at the address below. The scoring service documents itself at the second address.",
+    command: "http://localhost:8080   and   http://localhost:8000/docs",
   },
   {
     title: "Check every endpoint against the running stack",

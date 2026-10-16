@@ -90,7 +90,7 @@ export default function CasePage() {
           </p>
           <p className="measure mt-0 mb-3">
             A worked example, as arithmetic and nothing more. If the transaction score were as high as it can go and the voice
-            score as low as it can go, the average would land exactly halfway: medium risk. One check says alarm, the other says
+            score as low as it can go, the average would land exactly halfway, which falls in the medium band (the band edges are placeholders too). One check says alarm, the other says
             calm, and the average splits the difference.
           </p>
           <p className="measure m-0">

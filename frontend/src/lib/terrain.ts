@@ -3,6 +3,7 @@
 import { spectrogram } from "./audio";
 
 export const TERRAIN_RATE = 16000; // the same rate the API receives
+const ABSOLUTE_LOW_DB = -30; // spectrogram level (in the units of audio.spectrogram) below which the terrain is flat
 
 /** Height grid in 0..1, row-major [row][col]: row 0 is the lowest frequency, the last row is the highest (the Nyquist frequency). */
 export function terrainHeights(samples: Float32Array, cols: number, rows: number, floorDb = 60): Float32Array {
@@ -13,7 +14,10 @@ export function terrainHeights(samples: Float32Array, cols: number, rows: number
   let peak = -Infinity;
   for (const f of frames) for (let k = 0; k < bins; k++) if (f[k] > peak) peak = f[k];
   if (!Number.isFinite(peak)) return out;
-  const low = peak - floorDb;
+  // Silence must stay flat: the floor is also absolute, so a clip with nothing in it is not stretched up to full height.
+  const low = Math.max(peak - floorDb, ABSOLUTE_LOW_DB);
+  const span = peak - low;
+  if (span <= 3) return out;
   for (let c = 0; c < cols; c++) {
     const frame = frames[Math.min(frames.length - 1, Math.floor((c * frames.length) / cols))];
     for (let r = 0; r < rows; r++) {
@@ -21,7 +25,7 @@ export function terrainHeights(samples: Float32Array, cols: number, rows: number
       const k1 = Math.max(k0 + 1, Math.floor(((r + 1) * bins) / rows));
       let m = -Infinity;
       for (let k = k0; k < k1; k++) if (frame[k] > m) m = frame[k];
-      const h = Math.min(1, Math.max(0, (m - low) / floorDb));
+      const h = Math.min(1, Math.max(0, (m - low) / Math.max(span, floorDb / 2)));
       out[r * cols + c] = Math.pow(h, 1.35);
     }
   }

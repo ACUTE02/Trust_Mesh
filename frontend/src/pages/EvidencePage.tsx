@@ -204,8 +204,8 @@ function Envelope({ open, onOpen }: { open: boolean; onOpen: () => void }) {
           </p>
           <p className="measure m-0 text-ink-soft">
             <strong className="font-semibold text-ink">Read this with care.</strong> The control was weaker than the voice model
-            this site actually serves (its clean error rate was higher than <Num id="voice.2c.D" />, because it stopped training
-            early), so part of the gain is a weak control. The test is dataset clips run through software codecs, plus a simple
+            this site actually serves (its clean error rate was higher than <Num id="voice.2c.D" />, and it stopped training
+            early; whether that is the reason was not tested), so part of the gain is a weak control. The test is dataset clips run through software codecs, plus a simple
             made-up echo and noise: not real phone calls. The site still serves the original voice model. Nothing here changed
             a threshold.
           </p>

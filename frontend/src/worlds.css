@@ -105,7 +105,7 @@ html[data-world="voice"] h1 { font-size: clamp(1.6rem, 1rem + 2.2vw, 2.7rem); }
 /* Text over a scene sits on a scrim: the slab colour at 90 percent, so contrast does not depend on what is drawn behind. */
 .scrim { background: color-mix(in srgb, var(--slab) 90%, transparent); }
 .scrim-sheet { background: color-mix(in srgb, var(--sheet) 92%, transparent); }
-.panel { background: color-mix(in srgb, var(--slab) 94%, transparent); padding: 1.25rem; border: 1px solid var(--rule); }
+.panel { background: color-mix(in srgb, var(--slab) 98%, transparent); padding: 1.25rem; border: 1px solid var(--rule); }
 @media (min-width: 640px) { .panel { padding: 2rem; } }
 
 .hero { min-height: min(100svh, 56rem); display: grid; align-content: end; padding-bottom: 4rem; padding-top: 6rem; }

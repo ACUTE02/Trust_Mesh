@@ -32,8 +32,10 @@ function Driver({ perf }: { perf: boolean }) {
   useEffect(() => {
     const prefs = readPrefs();
     const cap = TIER_ORDER.indexOf(tierCap(prefs.isTouch, prefs.lowPower));
-    let tierIndex = 0; // start low
-    let ceiling = cap; // lowered after a demotion so the governor never flip-flops
+    // ?perf=1&tier=low|medium|high pins the tier, for measuring each tier on its own (development only)
+    const pinned = perf ? TIER_ORDER.indexOf((new URLSearchParams(window.location.search).get("tier") ?? "") as Tier) : -1;
+    let tierIndex = pinned >= 0 ? pinned : 0; // start low
+    let ceiling = pinned >= 0 ? pinned : cap; // lowered after a demotion so the governor never flip-flops
     let frames = 0, spanStart = 0, goodWindows = 0, lastRender = 0, cooldownUntil = 0;
     let frameMsAvg = 16, lastPerf = 0, rendersSincePerf = 0, lastDrawn = 0;
 
@@ -42,7 +44,9 @@ function Driver({ perf }: { perf: boolean }) {
     const canvas = gl.domElement;
     const lost = (e: Event) => { e.preventDefault(); setUi({ webgl: false }); };
     canvas.addEventListener("webglcontextlost", lost);
-    setUi({ tier: "low", webgl: true, stageReady: true });
+    setUi({ tier: TIER_ORDER[tierIndex], webgl: true, stageReady: true });
+    // with ?perf=1 the scene data is readable from the console, so a test can check what the scenes were handed
+    if (perf) (window as unknown as { __tmLive?: typeof live }).__tmLive = live;
 
     const stop = onTick((t) => {
       live.time = t;
@@ -62,7 +66,7 @@ function Driver({ perf }: { perf: boolean }) {
       lastRender = now;
       frames++;
       const span = now - spanStart;
-      if (frames >= 30 && now > cooldownUntil) {
+      if (frames >= 30 && now > cooldownUntil && pinned < 0) {
         const fps = (frames * 1000) / Math.max(span, 1);
         if (fps < 45 && tierIndex > 0) {                       // demote quickly on a dip
           tierIndex--; ceiling = Math.min(ceiling, tierIndex); goodWindows = 0; cooldownUntil = now + 5000;

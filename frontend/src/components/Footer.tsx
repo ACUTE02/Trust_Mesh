@@ -5,7 +5,7 @@ import { Legend } from "./evidence";
 
 export function DatasetCitations() {
   return (
-    <div>
+    <div data-citations>
       <table className="stack-sm w-full border-collapse text-sm">
         <caption className="sr-only">Datasets used, with licence and citation</caption>
         <thead>

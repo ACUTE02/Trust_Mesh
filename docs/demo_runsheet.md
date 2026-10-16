@@ -55,35 +55,44 @@ If something fails: `docker compose ps` (every service should be "Up", the loade
 `docker compose logs api --tail 50`. If Docker Desktop's engine has stopped by itself (it did twice during the
 build): `docker desktop start`.
 
-## 4. The demo script (about two minutes)
+## 4. The demo script (about three minutes)
 
-Say only what is on the page; every sentence below is backed by the project log.
+Say only what is on the page; every sentence below is backed by the project log. The site has six pages, each with its
+own look and its own 3D scene (revision 2, 2026-10-17); the same yellow tags, solid / hatched / dashed marks and the
+plain-language-first layers run through all of them. Start on the Overview in the theme you want to record. Scroll
+slowly: the scene behind the text changes with each section, and a section is only on screen for about a screen's height.
 
-1. **Overview, the instrument (20 s).** "This is one graph neural network scored two ways." Leave it on *Random
-   split*: 0.7730. Click **Time split**: 0.5115. "Same model, same settings. A random split trains and tests on the
-   same period; a time split tests on later transactions. The random split overstated it by 0.26."
-2. **The two cards under "What each check scored" (15 s).** "Two engines are measured. On the graph, plain XGBoost with three cheap graph statistics
-   scores 0.7482; the best graph neural network, after more than 175 tuning trials, scores 0.5913. The voice model
-   scores an equal error rate of 0.0166 on my own split of ASVspoof, which is not the official protocol. The third
-   engine is designed and not built: it has no results, so it gets a dashed row."
-3. **Click a yellow tag (10 s).** "Every number carries the run it came from and the file."
-4. **Voice Engine page, the instrument (25 s).** "The first voice model scored 0.0097. It was cheating: it listened to the silence."
-   Click **Silence removed**: 0.2380. "Bonafide clips in this dataset start with more silence. So I trim silence
-   before training and before scoring." Scroll to the ladder: "these hatched rows are the shortcut, kept on the page
-   so nobody mistakes them for results."
-5. **Generalisation (20 s).** "With four attack systems held out of training, the plain CNN's error rose by 0.24. The
-   frozen self-supervised models moved by about 0.001, which is not significant. On a different dataset the CNN
-   collapses and these hold at 0.08 to 0.10, on a small sample of 200 clips."
-6. **Voice desk (20 s).** Choose your own clip, **Score this clip**. "My recording, converted in the browser, scored
-   by Model D. The shaded part is silence the scorer trimmed. The thresholds were set on the test scores, so this is
-   a demonstration of the mechanism, not a calibrated alarm."
-7. **Graph Engine page (15 s).** Show the leaderboard and the three checks. Mention the limits list at the bottom.
-   (Graph desk: only if you decided rule 2 allows it. If so: enter an example, **Score this transaction**, and say
-   "the score is XGBoost's; the neighbourhood is from Neo4j and decided nothing".)
-8. **Close (10 s).** Overview, "What is tested, and what is not": "Two checks are measured. The combined warning is a
-   demonstration with no measured accuracy, because no dataset has the same case in both. The visual check is
-   designed and not built." For a technical audience, press "Show the detail for engineers" first: the exact terms,
-   the system diagram and the decisions table are there.
+1. **Overview, "The Mesh" (30 s).** The hero names the two checks and shows the third as a dashed row: "Designed, not
+   built. No results yet." Scroll through the three findings. "The same model scored 0.7730 on a random test and
+   0.5115 when tested fairly on later transactions" (the nodes split into a past sheet and a future sheet). "The first
+   voice model got 1 in 100 wrong while it could hear the silence at the start, and 24 in 100 once it was removed: the
+   low number was a shortcut." "Compressed phone audio is a known weakness; the warning catches MP3 and telephone-band
+   audio, and caught none of the AAC and Opus copies."
+2. **Click a yellow tag (10 s).** "Every number carries the run it came from and the file."
+3. **Graph Engine, "The Ledger" (30 s).** "A transaction is a bead on a thread." Scroll to the two sheets (the leak),
+   then the leaderboard: "a simple model that counts connections beats the best graph model, 0.7482 against 0.5913."
+   Graph desk: only if you decided rule 2 above allows it.
+4. **Voice Engine, "The Terrain" (60 s).** In the first panel record or choose your own clip: the landscape behind the
+   page is your voice, drawn in the browser before anything is sent. **Score this clip**: a light runs across it. Scroll
+   to "What phone audio does to speech": the cliff, the small table, and the honest sentence that this model has mostly
+   seen clean audio. "Two ways the site says no": press the two buttons to show the collapse and the fog bank. Then the
+   hatched rows of "Where the cheat was hiding".
+5. **Case desk, "The Balance" (25 s).** Score a case (rule 2 again). "The weights are placeholders: each score counts for
+   half, nobody tested that, and the combined score has no measured accuracy." Show the dashed list of what would make
+   it real.
+6. **Evidence, "The Archive" (30 s).** Pull two exhibits (each pulls its drawer in the wall). Show the dashed empty
+   drawers: "what we could not test." Break the seal on Phase 2D: "training on squeezed copies reduced the problem; it
+   did not remove it, and the control was weaker than the served model."
+7. **About, "The Workbench" (10 s).** The drawing goes back together as you scroll; the steps to run it yourself.
+8. **Close.** Switch the theme once to show the same page in the other palette. For a technical audience, press "Show the
+   detail for engineers" on any page first.
+
+Recording mode (`TRUSTMESH_RECORDING_MODE=1` on the API) hides real transaction numbers, labels and scores in every
+view, including the 3D scenes: the balance gets no transaction score, the neighbourhood beads are not coloured by a
+label, and the cases register shows no scores.
+
+If the 3D looks slow while recording, add `?perf=1` to the address to see the frame rate and quality tier, or record
+with reduced motion on (the pages show one still frame per world and crossfade between pages).
 
 ## 5. Hosting analysis (only if you want a live link)
 

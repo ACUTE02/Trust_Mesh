@@ -33,7 +33,7 @@ Voice numbers use a 36,775-clip subset of the ASVspoof 2019 LA evaluation partit
 speaker-disjoint split. They are not comparable with published ASVspoof results. Full tables:
 `docs/graph_leaderboard.md`, `docs/voice_leaderboard.md`.
 
-## The demo: three pages, served locally
+## The demo: six pages and a 404, served locally
 
 ```
 docker compose up --build
@@ -44,12 +44,18 @@ Open **http://localhost:8080**. Everything runs on this machine; there is no clo
 
 | Page | What it shows |
 |---|---|
-| `/` Overview | The two-scores instrument (random split against time split), the status of each engine, a case desk that scores one transaction and, optionally, one voice clip, and the three main findings |
-| `/graph` Graph Engine | The full leaderboard, three checks on it, and a live desk: score a transaction and see its neighbourhood from Neo4j |
-| `/voice` Voice Engine | The silence shortcut, the model progression, the generalisation tests, and a live desk: score your own recording |
+| `/` Overview ("The Mesh") | What TrustMesh is, three findings (the random split, the silence shortcut, compressed phone audio), the headline scores, and a compact case desk that scores one transaction and, optionally, one voice clip |
+| `/graph` Graph Engine ("The Ledger") | Why a random test fools you, the full leaderboard, and a live desk: score a transaction and see its neighbourhood from Neo4j |
+| `/voice` Voice Engine ("The Terrain") | Your own recording drawn as a landscape in the browser, the silence shortcut, what compressed phone audio does, the two ways the site says no, the model progression and the generalisation tests |
+| `/case` Case desk ("The Balance") | The combined case desk, why its weights are placeholders, and a register of the cases scored in this visit |
+| `/evidence` Evidence ("The Archive") | What was checked and what was not: exhibits, the untested things, and the Phase 2D result |
+| `/about` About ("The Workbench") | How to rebuild the project, who built it, and the datasets and citations |
 
-Each page reads in plain language by default; "Show the detail for engineers" opens the exact terms, protocol and
-system detail. Light and dark themes (the first visit follows the operating system). To try everything yourself,
+Each page has its own look (its own colours, typeface, 3D scene and motion) but the same rules: yellow tags say which run a
+number comes from, solid means measured, hatched means a shortcut, dashed means designed or not run. Each page reads in plain language by default; "Show the detail for engineers" opens the exact terms, protocol and
+system detail. Light and dark themes in every world (the first visit follows the operating system). The 3D is an
+extra: all text is real page text, and without WebGL, with data saving on, or with reduced motion the pages show a
+still poster or a calm still scene instead. To try everything yourself,
 step by step: `docs/HOW_TO_TEST_MYSELF.md`. On Windows, `start.bat` starts the whole stack and `stop.bat` stops it. Screenshots of the pages' empty states:
 `docs/frontend_screenshots/` (three widths, both themes). They contain aggregate results only.
 
@@ -156,7 +162,7 @@ The `.pt` and `.npz` files are zip-format: if your download tool unpacks them in
 (see issue #44 in the project log). `artifacts/serving/*.json` (warning levels) is in the repository.
 
 What a first start looks like without them: `docker compose up` starts Neo4j; the `loader` prints the list above and
-stops; the API does not start; the site still opens on http://localhost:8080 and its three pages read normally, but
+stops; the API does not start; the site still opens on http://localhost:8080 and its pages read normally, but
 each desk says the scoring service did not answer.
 
 Then: http://localhost:8080 (site), http://localhost:8000/docs (API), http://localhost:7474 (Neo4j browser, user
@@ -172,9 +178,60 @@ every number on the site against its source file; `scripts/seed_cases.py` fills 
 For a temporary public deployment, the demo script and the teardown checklist, read `docs/demo_runsheet.md` first.
 In short: `docker-compose.deploy.yml` closes Neo4j's and the API's ports and requires a new Neo4j password.
 
+## The frontend
+
+### Run it and build it
+
+```
+cd frontend
+npm install
+npm run dev        # http://localhost:5173, forwards /api to the service on port 8000
+npm run build      # type check, tests, then the production build (the Docker build runs the same)
+```
+
+`?perf=1` on any page shows a small readout (frames drawn per second, draw calls, triangles, geometry and texture
+counts, the quality tier) and `&tier=low|medium|high` pins the tier. It reads local counters only; nothing is sent anywhere.
+
+### How the pages are put together
+
+- **Content.** Every number comes from `src/data/evidence.json` through `<Num id="...">`, with its source file, run date
+  and phase code. A test fails the build if a page renders a result number from anywhere else. To change or add a number,
+  edit that file and run `scripts/check_frontend_numbers.py`.
+- **Worlds.** Each route is one world: `src/pages/*Page.tsx` is its text, `src/world/scenes/*Scene.tsx` its 3D scene,
+  `src/world/worlds.ts` its name, title and motion character. A page is cut into `<Chapter stage={n}>` sections; when a
+  chapter crosses the middle of the screen the scene eases to its chapter. A page talks to its scene through a small
+  data file (`graphData.ts`, `voiceData.ts`, `caseData.ts`, `evidenceData.ts`); the scene never reads the page.
+- **One canvas.** `src/world/Stage.tsx` holds a single WebGL canvas for the whole site, loaded after first paint. One
+  animation loop (`ticker.ts`) drives smooth scroll and the canvas; the canvas draws only when something changed.
+  A quality governor starts on the low tier and moves up only while the frame rate holds.
+- **Palettes.** `src/worlds.css` holds one block per world and theme (colours and the display typeface). The scenes read
+  the same CSS variables (`palettes.ts`), so to change a world's colours edit its block and run
+  `scripts/check_contrast.py`, which fails if a text or mark pair drops below WCAG AA, including over a 3D scene.
+- **Fallbacks.** Reduced motion draws one still frame per world and uses a crossfade between pages. Data saving, no
+  WebGL, or a lost context shows a drawn poster (`components/Poster.tsx`) with the same text.
+
+### Dependencies added in Revision 2 (all permissive; `npm audit --omit=dev` reports no vulnerabilities)
+
+| Package | Version | Licence | Why |
+|---|---|---|---|
+| `three` | 0.186.1 | MIT | the 3D engine |
+| `@react-three/fiber` | 9.8.2 | MIT | React bindings for three (React 19 compatible) |
+| `lenis` | 1.3.27 | MIT | smooth scrolling |
+| `@fontsource-variable/bricolage-grotesque`, `fraunces`, `unbounded`, `sofia-sans-extra-condensed` | 5.3.0 | OFL-1.1 | one display typeface per world, latin subset only |
+
+GSAP was considered and not used: its licence is not MIT, ISC, BSD or Apache. A 60-line ticker and easing module replaces it.
+
+### Before any deployment
+
+The footer and About page carry the owner's GitHub and LinkedIn links; the resume link and a paragraph in the owner's own
+words are open (`data-todo` attributes and `TODO(owner)` comments in `AboutPage.tsx`). The test counts on the Overview
+page's "For engineers" layer come from the data module and must be updated there first. Run
+`scripts/check_worlds_browser.py` against the production build, and see `docs/demo_runsheet.md`.
+
 ## Layout
 
 - `frontend/` -- the React site (Vite, TypeScript, Tailwind). `src/data/evidence.json` is the one place numbers live.
+  The 3D worlds live in `frontend/src/world/` (see "The frontend" below).
 - `serving/`, `docker-compose.yml`, `docker-compose.deploy.yml`, `Dockerfile`, `.env.example` -- the API, Neo4j loader,
   fusion, cases table and their settings. `scripts/verify_serving.py`, `seed_cases.py`, `check_frontend_numbers.py`,
   `check_contrast.py`, `capture_screenshots.py`, `calibrate_voice_thresholds.py` support them.
@@ -230,7 +287,8 @@ sources disagree, both are listed. A citation that has not been looked up says s
 Elliptic's licence (CC BY-NC-ND 4.0) allows non-commercial sharing with attribution but not sharing of adapted
 material. Whether per-transaction model scores or trained weights are adapted material is an open owner decision
 (`docs/design_decisions.md`, "Terms findings"; not legal advice), so neither is in this repository. The site's
-typefaces, Schibsted Grotesk and Martian Mono, are under the SIL Open Font License 1.1.
+typefaces (Schibsted Grotesk, Martian Mono, Bricolage Grotesque, Fraunces, Unbounded and Sofia Sans Extra Condensed) are
+under the SIL Open Font License 1.1 and are served from the site itself.
 
 Open point: whether trained weights count as "derived data" under Celeb-DF's wording is unresolved.
 Until it is, weights stay out of this repository; their SHA-256 hashes are recorded with the results.
