@@ -155,7 +155,7 @@ decisions; this check shows why. For a demo, expect your own voice to be flagged
 
 The table with each clip's length, score and level is **not in this report and not in the repository**. The owner
 asked that the clips and their scores never be copied into the repository, and this report is part of it. The
-table is in a private file next to the clips: `my_voice_tests\MY_VOICE_RESULTS.md`.
+table is in a private file next to the clips: `<your-own-clips-folder>\MY_VOICE_RESULTS.md`.
 
 Tool note: the conversion needs a program called ffmpeg, which was not installed on this machine. A copy was
 installed inside the project's own Python folder only (the `imageio-ffmpeg` package in `.venv`). Nothing was
@@ -204,4 +204,4 @@ installed system-wide.
 
 - Totals from each step: `data/self_test/*.json` on this machine (not in the repository).
 - The scripts: `scripts/self_test_offline.py`, `self_test_live.py`, `self_test_browser.py`.
-- The owner's clips and their results: `E:\TrustMesh\my_voice_tests\` (private).
+- The owner's clips and their results: `<your-own-clips-folder>\` (private).

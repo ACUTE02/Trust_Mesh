@@ -10,7 +10,7 @@ Compressed  : the same 13 clips re-encoded as AAC 32 kb/s, AAC 32 kb/s through 4
 Noisy       : the 13 clean clips with white noise added at 20, 10, 5 and 0 dB signal-to-noise.
 Owner       : the owner's own recordings (3 genuine voice memos, 3 voice clones), read from --folder.
 
-Run: .venv\\Scripts\\python.exe scripts/calibrate_audio_guard.py --folder E:\\TrustMesh\\my_voice_tests
+Run: .venv\\Scripts\\python.exe scripts/calibrate_audio_guard.py --folder <your-own-clips-folder>
 Results (aggregates) are written to data/self_test/audio_guard_calibration.json (git-ignored).
 """
 import argparse

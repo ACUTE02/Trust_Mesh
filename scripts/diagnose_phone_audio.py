@@ -10,7 +10,7 @@ Checks (numbers as in the owner's request):
   2  the clips in several versions                          4  codec / level / noise / resampling / reverb on dataset clips
   3  browser microphone path (headless Edge, fake capture device playing the owner's real clip)
 
-Run: .venv\\Scripts\\python.exe scripts/diagnose_phone_audio.py "E:\\TrustMesh\\my_voice_tests"
+Run: .venv\\Scripts\\python.exe scripts/diagnose_phone_audio.py "<your-own-clips-folder>"
 Needs the stack NOT to be running Docker (it only needs the weights on disk) and, for check 3, frontend/dist built.
 """
 import asyncio

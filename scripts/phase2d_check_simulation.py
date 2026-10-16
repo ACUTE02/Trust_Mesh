@@ -9,7 +9,7 @@ compared.
 Pre-registered meaning of "close" (written before running): the mean score drop under the simulation lies
 between half and twice the mean drop under real AAC 32 kb/s, AND every clip drops under both.
 
-Run: .venv\\Scripts\\python.exe scripts/phase2d_check_simulation.py --folder E:\\TrustMesh\\my_voice_tests
+Run: .venv\\Scripts\\python.exe scripts/phase2d_check_simulation.py --folder <your-own-clips-folder>
 Prints aggregates and per-clip drops for the public dataset clips only; writes data/self_test/phase2d_a2.json.
 """
 import argparse

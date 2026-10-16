@@ -347,7 +347,7 @@ endpoints; `recording_mode` in `/health`; `serving/preflight.py` and its use in 
 API per request and the frontend no longer waits for the API; the instrument no longer depends on an animation frame.
 **Repository change:** `.gitignore` `data/` became `/data/`; `frontend/src/data/` is now tracked.
 **Installed:** `imageio-ffmpeg` and `axe-core`, both inside the project (`.venv` and `frontend/node_modules`). Nothing system-wide.
-**Created outside the repository:** `E:\TrustMesh\my_voice_tests\_converted_wav\` (WAV copies), `MY_VOICE_RESULTS.md` and
+**Created outside the repository:** `<your-own-clips-folder>\_converted_wav\` (WAV copies), `MY_VOICE_RESULTS.md` and
 `my_voice_results.json` next to them. The clean-clone folder and its images were removed after the test.
 
 **Not run:** the voice half of ST2; a first start with real downloads; real speech through the microphone; screen
@@ -504,7 +504,7 @@ can separate compression, room, and microphone/speaker, with the same speaker ea
 - Other speakers, other phones, other recording apps.
 - Anything that needs training, such as training with compressed audio (the unrun Model F idea).
 
-Per-clip detail stays in `E:\TrustMesh\my_voice_tests\PHONE_AUDIO_DIAGNOSIS_PRIVATE.json` and the `_diagnosis` folder
+Per-clip detail stays in `<your-own-clips-folder>\PHONE_AUDIO_DIAGNOSIS_PRIVATE.json` and the `_diagnosis` folder
 next to the recordings (outside the repository). Totals are in `data/self_test/phone_audio.json` (git-ignored).
 
 ## Compression test on another speaker's clean recordings (2026-10-13)
