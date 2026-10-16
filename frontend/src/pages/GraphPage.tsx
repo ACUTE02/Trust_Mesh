@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { DemoState, Score, VerdictTag, errorText } from "../components/caseParts";
 import { DotPlot, type PlotRow } from "../components/DotPlot";
 import { EngineerLayer, EngineerToggle, ForEngineers, GRAPH_SCORE_MEANING, Glossary, Meaning } from "../components/engineers";
-import { CaveatNote, EvidenceRow, Live, MaskContext, Num, Section } from "../components/evidence";
+import { CaveatNote, EvidenceRow, Live, MaskContext, Marker, Num } from "../components/evidence";
 import { TechView } from "../components/TechView";
 import examples from "../data/examples.json";
 import { api, readCallLog, startCallLog, type ApiCall, type GraphExplain, type GraphScore, type Neighbour, type Verdict } from "../lib/api";
 import { RecordingBanner, isRecording, useHealth } from "../components/caseParts";
+import { KineticText } from "../components/KineticText";
+import { evidence } from "../data/evidence";
+import { Chapter, useResetStage } from "../world/chapters";
+import { clearGraph, publishGraph } from "../world/graphData";
 
 const LEADERBOARD: PlotRow[] = [
   { id: "graph.xgb12", seedMeanId: "graph.xgb12.mean", label: "XGBoost, raw features plus degree, PageRank and clustering", reference: true },
@@ -186,6 +190,13 @@ function GraphDesk() {
   }
 
   const r = result;
+  // The neighbourhood behind the page: structure only. In recording mode no bead is coloured by a score or a label.
+  useEffect(() => {
+    publishGraph({
+      centre: r ? { flagged: !mask && r.score.verdict === "high" } : null,
+      neighbours: (r?.neighbours ?? []).map((n) => ({ hops: n.hops, flagged: !mask && n.verdict === "high" })),
+    });
+  }, [r, mask]);
   return (
     <div>
       <form
@@ -373,154 +384,206 @@ const GLOSSARY: [string, string][] = [
 ];
 
 export function GraphPage() {
+  useResetStage();
+  // The bars of the scene are the leaderboard's own values, read from the data module; nothing is typed here.
+  useEffect(() => {
+    publishGraph({ bars: LEADERBOARD.map((row) => ({ value: evidence(row.id).value ?? 0, tint: row.reference ? 1 : 0 })) });
+    return clearGraph;
+  }, []);
   return (
     <EngineerLayer page="graph">
-      <section className="pt-14" aria-labelledby="graph-h">
-        <h1 id="graph-h" className="measure" style={{ fontSize: "var(--text-hero)" }}>
-          Simple counts of a transaction's connections beat the fancier graph models.
-        </h1>
-        <div className="measure mt-6 grid gap-2">
-          <p className="m-0 text-lg">This model looks at who a transaction is connected to.</p>
-          <p className="m-0">
-            The data is <Num id="graph.nodes" /> Bitcoin transactions. <Num id="graph.illicit" /> are marked as fraud and{" "}
-            <Num id="graph.licit" /> as normal. The rest have no label.
-          </p>
-          <p className="m-0">Every model learned from earlier transactions. Each was tested on later ones.</p>
-          <Meaning>The score: {GRAPH_SCORE_MEANING}</Meaning>
+      <Chapter stage={0} className="hero" label="graph-h">
+        <div className="scrim chapter-card" style={{ maxWidth: "42rem" }}>
+          <h1 id="graph-h" className="measure" style={{ fontSize: "var(--text-hero)" }}>
+            <KineticText text="Simple counts of a transaction's connections beat the fancier graph models." mode="wipe" />
+          </h1>
+          <div className="measure mt-6 grid gap-2">
+            <p className="m-0 text-lg">This model looks at who a transaction is connected to.</p>
+            <p className="m-0">
+              The data is <Num id="graph.nodes" /> Bitcoin transactions. <Num id="graph.illicit" /> are marked as fraud and{" "}
+              <Num id="graph.licit" /> as normal. The rest have no label.
+            </p>
+            <p className="m-0">Every model learned from earlier transactions. Each was tested on later ones.</p>
+            <Meaning>The score: {GRAPH_SCORE_MEANING}</Meaning>
+          </div>
+          <div className="mt-6">
+            <EngineerToggle />
+          </div>
+          <ForEngineers title="protocol">
+            <ul className="m-0 grid list-none gap-1.5 p-0">
+              <li>
+                Dataset: Elliptic. <Num id="graph.nodes" /> nodes, <Num id="graph.edges" /> directed edges, <Num id="graph.features" />{" "}
+                features per node.
+              </li>
+              <li>
+                Labels: licit <Num id="graph.licit" /> (<Num id="graph.licitPct" />), illicit <Num id="graph.illicit" /> (
+                <Num id="graph.illicitPct" />), unknown <Num id="graph.unknown" /> (<Num id="graph.unknownPct" />). Unknown nodes
+                are excluded from training loss and from metrics.
+              </li>
+              <li>
+                Temporal split: train on time steps <Num id="graph.trainFirstStep" /> to <Num id="graph.trainLastStep" />, test on{" "}
+                <Num id="graph.testFirstStep" /> to <Num id="graph.testLastStep" />; the steps between are validation.
+              </li>
+              <li>Metric: PR-AUC on the illicit class, labelled test nodes only. Class-weighted training.</li>
+              <li>Seeds: three for the reference XGBoost and for the best GNN; single runs elsewhere.</li>
+              <li>
+                Served scorer: XGBoost Tier-1+2 (the <Num id="graph.features" /> raw features plus degree, out/in degree ratio,
+                PageRank and clustering coefficient).
+              </li>
+            </ul>
+          </ForEngineers>
         </div>
-        <div className="mt-6">
-          <EngineerToggle />
-        </div>
-        <ForEngineers title="protocol">
-          <ul className="m-0 grid list-none gap-1.5 p-0">
-            <li>
-              Dataset: Elliptic. <Num id="graph.nodes" /> nodes, <Num id="graph.edges" /> directed edges, <Num id="graph.features" />{" "}
-              features per node.
-            </li>
-            <li>
-              Labels: licit <Num id="graph.licit" /> (<Num id="graph.licitPct" />), illicit <Num id="graph.illicit" /> (
-              <Num id="graph.illicitPct" />), unknown <Num id="graph.unknown" /> (<Num id="graph.unknownPct" />). Unknown nodes
-              are excluded from training loss and from metrics.
-            </li>
-            <li>
-              Temporal split: train on time steps <Num id="graph.trainFirstStep" /> to <Num id="graph.trainLastStep" />, test on{" "}
-              <Num id="graph.testFirstStep" /> to <Num id="graph.testLastStep" />; the steps between are validation.
-            </li>
-            <li>Metric: PR-AUC on the illicit class, labelled test nodes only. Class-weighted training.</li>
-            <li>Seeds: three for the reference XGBoost and for the best GNN; single runs elsewhere.</li>
-            <li>
-              Served scorer: XGBoost Tier-1+2 (the <Num id="graph.features" /> raw features plus degree, out/in degree ratio,
-              PageRank and clustering coefficient).
-            </li>
-          </ul>
-        </ForEngineers>
-      </section>
+      </Chapter>
 
-      <Section title="What we tried, and what each scored" id="leaderboard">
-        <DotPlot
-          caption="Best first. A bracket shows how much the score moved across three training runs."
-          rows={LEADERBOARD_PLAIN}
-          axisMax={1}
-          axisLabel="the score, higher is better"
-          hue="ledger"
-        />
-        <p className="measure mt-4 mb-0">Seven more graph models scored lower than these. The gap did not close with more tuning.</p>
-        <ForEngineers title="full leaderboard">
+      <Chapter stage={1} className="chapter" label="split-h">
+        <div className="scrim chapter-card">
+          <p className="m-0 mb-3">
+            <Marker ids={["graph.sage.random", "graph.sage.temporal", "graph.sage.splitGap"]} />
+          </p>
+          <h2 id="split-h" className="text-xl">
+            <KineticText text="Why a random test fools you" mode="wipe" />
+          </h2>
+          <p className="measure mt-4 mb-3">
+            Picture two sheets of paper. On the left, the past. On the right, the future. A fair test learns from the left
+            sheet and is tested on the right. A random test shuffles both sheets together, so some of the future sits
+            inside what the model learned from.
+          </p>
+          <p className="measure m-0">
+            The same model scored <Num id="graph.sage.random" spread={false} /> that way, and <Num id="graph.sage.temporal" spread={false} />{" "}
+            when tested fairly. Keep scrolling: a few future transactions slide into the past sheet, then leave again. (The beads are an illustration, not the real transactions.)
+          </p>
+        </div>
+      </Chapter>
+
+      <Chapter stage={2} id="leaderboard" className="chapter" label="leaderboard-h">
+        <div className="panel" style={{ maxWidth: "46rem" }}>
+          <h2 id="leaderboard-h" className="mb-6 text-xl">
+            <KineticText text="Did graph structure help? What we tried, and what each scored" mode="wipe" />
+          </h2>
           <DotPlot
-            caption="Test PR-AUC, temporal split, sorted. Bracket: three-seed mean with its standard deviation."
-            rows={LEADERBOARD}
+            caption="Best first. A bracket shows how much the score moved across three training runs."
+            rows={LEADERBOARD_PLAIN}
             axisMax={1}
-            axisLabel="PR-AUC, higher is better"
+            axisLabel="the score, higher is better"
             hue="ledger"
           />
-          <p className="mt-3 mb-0 text-xs text-ink-soft">
-            Generated table: docs/graph_leaderboard.md. GNN search total: <Num id="graph.trials" /> trials across phases.
+          <p className="measure mt-4 mb-0">Seven more graph models scored lower than these. The gap did not close with more tuning.</p>
+          <p className="measure mt-2 mb-0 text-sm text-ink-soft">On a wide screen, every model is also a stack of beads beside this panel, as tall as its score.</p>
+          <ForEngineers title="full leaderboard">
+            <DotPlot
+              caption="Test PR-AUC, temporal split, sorted. Bracket: three-seed mean with its standard deviation."
+              rows={LEADERBOARD}
+              axisMax={1}
+              axisLabel="PR-AUC, higher is better"
+              hue="ledger"
+            />
+            <p className="mt-3 mb-0 text-xs text-ink-soft">
+              Generated table: docs/graph_leaderboard.md. GNN search total: <Num id="graph.trials" /> trials across phases.
+            </p>
+          </ForEngineers>
+        </div>
+      </Chapter>
+
+      <Chapter stage={3} id="desk" className="below-fold mt-20" label="desk-h">
+        <div className="panel" style={{ maxWidth: "46rem" }}>
+          <h2 id="desk-h" className="mb-3 text-xl">
+            <KineticText text="Try it: score a transaction" mode="wipe" />
+          </h2>
+          <p className="measure mt-0 mb-6">Type a transaction number. You get its fraud score and the transactions around it. The beads behind this panel become that neighbourhood.</p>
+          <GraphDesk />
+        </div>
+      </Chapter>
+
+      <Chapter stage={4} id="checks" className="below-fold mt-20" label="checks-h">
+        <div className="panel">
+          <h2 id="checks-h" className="mb-6 text-xl">
+            Three checks on that result
+          </h2>
+          <EvidenceRow
+            ids={["graph.sage.random", "graph.sage.temporal", "graph.sage.splitGap"]}
+            claim={
+              <>
+                Tested the easy way, a graph model scores <Num id="graph.sage.random" />. Tested the honest way, it scores{" "}
+                <Num id="graph.sage.temporal" />.
+              </>
+            }
+            more={
+              <>
+                The easy way mixes old and new transactions. <Link to="/">The first page shows both side by side.</Link>
+              </>
+            }
+          />
+          <EvidenceRow
+            ids={["graph.camo.xgb", "graph.camo.sage", "graph.camo.care", "graph.camo.n"]}
+            claim={<>Fraud that hides among normal transactions: the model built to catch it did not help.</>}
+            more={
+              <>
+                We took <Num id="graph.camo.n" /> fraud transactions with no known-fraud neighbour. Each model was allowed the
+                same number of false alarms. The chart shows the share of that fraud each one caught. One caution: most
+                transactions have no label, so "no fraud neighbour" often just means "unlabelled neighbour".
+              </>
+            }
+          >
+            <DotPlot caption="Share of the hidden fraud each model caught." rows={CAMOUFLAGE_PLAIN} axisMax={1} axisLabel="share caught, higher is better" hue="ledger" />
+            <ForEngineers title="camouflage check">
+              <p className="m-0">
+                Recall @ <Num id="graph.camo.fpr" /> FPR (n = <Num id="graph.camo.n" />): illicit test nodes with zero
+                illicit-labelled neighbours; threshold per model matched to <Num id="graph.camo.fpr" /> FPR on licit test nodes.
+                CARE-GNN <Num id="graph.camo.care" />, GraphSAGE <Num id="graph.camo.sage" />, XGBoost Tier-1+2{" "}
+                <Num id="graph.camo.xgb" />. <Num id="graph.unknownPctRounded" /> of nodes are unlabelled.
+              </p>
+            </ForEngineers>
+          </EvidenceRow>
+          <EvidenceRow
+            ids={["graph.explain.edgeRemoval", "graph.explain.node"]}
+            claim={<>We checked one explanation by hand. One tool was right and one was wrong.</>}
+            more={
+              <>
+                Two tools disagreed about whether a neighbouring transaction mattered. We removed it. The prediction moved by
+                about <Num id="graph.explain.edgeRemoval" />. So it did not matter. This was one transaction only.
+              </>
+            }
+          >
+            <ForEngineers title="explanation cross-check">
+              <p className="m-0">
+                Node <Num id="graph.explain.node" />, one incoming edge. GAT layer-1 attention gave the edge almost no weight;
+                GNNExplainer&apos;s edge mask called it important. Edge-removal ablation: GAT&apos;s prediction changed by about{" "}
+                <Num id="graph.explain.edgeRemoval" />, so attention was right. One node, not a study.
+              </p>
+            </ForEngineers>
+          </EvidenceRow>
+        </div>
+      </Chapter>
+
+      <Chapter stage={4} id="limits" className="below-fold mt-20" label="limits-h">
+        <div className="panel">
+          <h2 id="limits-h" className="mb-3 text-xl">
+            How to read a score, and the limits
+          </h2>
+          <p className="measure mt-0 mb-6">
+            A score from 0 to 1 ranks transactions from least to most suspicious. It is a ranking, not a chance: a score halfway
+            up does not mean an even chance of fraud.
           </p>
-        </ForEngineers>
-      </Section>
-
-      <Section title="Three checks on that result" id="checks">
-        <EvidenceRow
-          ids={["graph.sage.random", "graph.sage.temporal", "graph.sage.splitGap"]}
-          claim={
-            <>
-              Tested the easy way, a graph model scores <Num id="graph.sage.random" />. Tested the honest way, it scores{" "}
-              <Num id="graph.sage.temporal" />.
-            </>
-          }
-          more={
-            <>
-              The easy way mixes old and new transactions. <Link to="/">The first page shows both side by side.</Link>
-            </>
-          }
-        />
-        <EvidenceRow
-          ids={["graph.camo.xgb", "graph.camo.sage", "graph.camo.care", "graph.camo.n"]}
-          claim={<>Fraud that hides among normal transactions: the model built to catch it did not help.</>}
-          more={
-            <>
-              We took <Num id="graph.camo.n" /> fraud transactions with no known-fraud neighbour. Each model was allowed the same
-              number of false alarms. The chart shows the share of that fraud each one caught. One caution: most transactions
-              have no label, so "no fraud neighbour" often just means "unlabelled neighbour".
-            </>
-          }
-        >
-          <DotPlot caption="Share of the hidden fraud each model caught." rows={CAMOUFLAGE_PLAIN} axisMax={1} axisLabel="share caught, higher is better" hue="ledger" />
-          <ForEngineers title="camouflage check">
-            <p className="m-0">
-              Recall @ <Num id="graph.camo.fpr" /> FPR (n = <Num id="graph.camo.n" />): illicit test nodes with zero
-              illicit-labelled neighbours; threshold per model matched to <Num id="graph.camo.fpr" /> FPR on licit test nodes.
-              CARE-GNN <Num id="graph.camo.care" />, GraphSAGE <Num id="graph.camo.sage" />, XGBoost Tier-1+2{" "}
-              <Num id="graph.camo.xgb" />. <Num id="graph.unknownPctRounded" /> of nodes are unlabelled.
-            </p>
-          </ForEngineers>
-        </EvidenceRow>
-        <EvidenceRow
-          ids={["graph.explain.edgeRemoval", "graph.explain.node"]}
-          claim={<>We checked one explanation by hand. One tool was right and one was wrong.</>}
-          more={
-            <>
-              Two tools disagreed about whether a neighbouring transaction mattered. We removed it. The prediction moved by
-              about <Num id="graph.explain.edgeRemoval" />. So it did not matter. This was one transaction only.
-            </>
-          }
-        >
-          <ForEngineers title="explanation cross-check">
-            <p className="m-0">
-              Node <Num id="graph.explain.node" />, one incoming edge. GAT layer-1 attention gave the edge almost no weight;
-              GNNExplainer's edge mask called it important. Edge-removal ablation: GAT's prediction changed by about{" "}
-              <Num id="graph.explain.edgeRemoval" />, so attention was right. One node, not a study.
-            </p>
-          </ForEngineers>
-        </EvidenceRow>
-      </Section>
-
-      <Section title="Try it: score a transaction" id="desk">
-        <p className="measure mt-0 mb-6">Type a transaction number. You get its fraud score and the transactions around it.</p>
-        <GraphDesk />
-      </Section>
-
-      <Section title="Limits" id="limits">
-        <ul className="measure m-0 grid list-none gap-3 p-0">
-          <li className="rule-t pt-3">We tested on one dataset only.</li>
-          <li className="rule-t pt-3">The graph models might still improve with more tuning. We stopped before they levelled off.</li>
-          <li className="rule-t pt-3">The score is a ranking, not a probability. A score halfway up does not mean an even chance of fraud.</li>
-          <li className="rule-t pt-3">The live desk does not show which details of a transaction drove its score.</li>
-        </ul>
-        <ForEngineers title="limits">
-          <ul className="m-0 grid list-none gap-1.5 p-0">
-            <li>Single dataset; no cross-dataset check for the graph engine.</li>
-            <li>RGCN relations are derived from payment direction (Elliptic edges are untyped).</li>
-            <li>GNN search not plateaued: best hyperparameters sat at the search boundary.</li>
-            <li>XGBoost was trained with a class weight, so its outputs are uncalibrated; verdict bands are score thresholds from validation-period licit nodes.</li>
-            <li>No per-feature attribution in the desk: the API is unchanged and the features are anonymised.</li>
-            <li>GAT-tuned and GIN figures are from the logged run; a later re-run differs slightly (see their tags).</li>
+          <ul className="measure m-0 grid list-none gap-3 p-0">
+            <li className="rule-t pt-3">We tested on one dataset only.</li>
+            <li className="rule-t pt-3">The graph models might still improve with more tuning. We stopped before they levelled off.</li>
+            <li className="rule-t pt-3">The live desk does not show which details of a transaction drove its score.</li>
           </ul>
-        </ForEngineers>
-        <ForEngineers title="glossary">
-          <Glossary terms={GLOSSARY} />
-        </ForEngineers>
-      </Section>
+          <ForEngineers title="limits">
+            <ul className="m-0 grid list-none gap-1.5 p-0">
+              <li>Single dataset; no cross-dataset check for the graph engine.</li>
+              <li>RGCN relations are derived from payment direction (Elliptic edges are untyped).</li>
+              <li>GNN search not plateaued: best hyperparameters sat at the search boundary.</li>
+              <li>XGBoost was trained with a class weight, so its outputs are uncalibrated; verdict bands are score thresholds from validation-period licit nodes.</li>
+              <li>No per-feature attribution in the desk: the API is unchanged and the features are anonymised.</li>
+              <li>GAT-tuned and GIN figures are from the logged run; a later re-run differs slightly (see their tags).</li>
+            </ul>
+          </ForEngineers>
+          <ForEngineers title="glossary">
+            <Glossary terms={GLOSSARY} />
+          </ForEngineers>
+        </div>
+      </Chapter>
     </EngineerLayer>
   );
 }

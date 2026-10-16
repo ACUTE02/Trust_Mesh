@@ -35,7 +35,7 @@ function Driver({ perf }: { perf: boolean }) {
     let tierIndex = 0; // start low
     let ceiling = cap; // lowered after a demotion so the governor never flip-flops
     let frames = 0, spanStart = 0, goodWindows = 0, lastRender = 0, cooldownUntil = 0;
-    let frameMsAvg = 16, lastPerf = 0, rendersSincePerf = 0;
+    let frameMsAvg = 16, lastPerf = 0, rendersSincePerf = 0, lastDrawn = 0;
 
     refreshPalette();
     gl.setClearColor(palette.bg, 0);
@@ -47,7 +47,9 @@ function Driver({ perf }: { perf: boolean }) {
     const stop = onTick((t) => {
       live.time = t;
       if (!live.dirty && !live.continuous) { frames = 0; return; }
+      if (!live.dirty && live.fpsCap && t - lastDrawn < 1 / live.fpsCap - 1 / 250) return; // continuous scenes may cap their rate
       live.dirty = false;
+      lastDrawn = t;
       const t0 = performance.now();
       advance(t * 1000, true);
       const cost = performance.now() - t0;

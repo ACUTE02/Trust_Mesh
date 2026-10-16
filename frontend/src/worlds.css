@@ -110,6 +110,7 @@ html[data-world="voice"] h1 { font-size: clamp(1.6rem, 1rem + 2.2vw, 2.7rem); }
 
 .hero { min-height: min(100svh, 56rem); display: grid; align-content: end; padding-bottom: 4rem; padding-top: 6rem; }
 .chapter { min-height: 90svh; display: grid; align-content: center; padding: 3rem 0; }
+.chapter > * { min-width: 0; }
 .chapter-card { max-width: 36rem; padding: 1.25rem 1.5rem; }
 .below-fold { content-visibility: auto; contain-intrinsic-size: auto 700px; }
 

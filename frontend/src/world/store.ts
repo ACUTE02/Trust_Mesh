@@ -17,6 +17,7 @@ export const live = {
   // set by pages, read by scenes
   data: {} as Record<string, unknown>,
   time: 0, // seconds, set by the Stage each tick
+  fpsCap: 0, // 0 = every tick; a scene may ask for 30 when its motion is slow
   continuous: false, // the active scene animates by itself (drift), so draw every tick
 };
 
