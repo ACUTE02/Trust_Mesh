@@ -204,9 +204,13 @@ async def tiers(base):
         for tier in ("low", "medium", "high"):
             for name, path in ROUTES.items():
                 await page.goto(f"{base}{path}?perf=1&tier={tier}", wait=0)
-                await asyncio.sleep(5.0)
-                snap = json.loads(await page.js("JSON.stringify(window.__tmPerf || null)") or "null")
-                table.setdefault(name, {})[tier] = snap and {k: snap[k] for k in ("calls", "triangles", "geometries", "textures", "frameMs", "fps", "tier")}
+                await asyncio.sleep(4.5)
+                # a scene that draws only on demand may have drawn once before it finished loading: nudge it, then read
+                await page.js("window.dispatchEvent(new PointerEvent('pointermove', {clientX: 500, clientY: 300})); 1")
+                await asyncio.sleep(1.5)
+                info = json.loads(await page.js("JSON.stringify(window.__tmInfo ? window.__tmInfo() : null)") or "null")
+                perf = json.loads(await page.js("JSON.stringify(window.__tmPerf || null)") or "null")
+                table.setdefault(name, {})[tier] = info and {**info, "frameMs": perf and perf["frameMs"], "tier_reported": perf and perf["tier"]}
         return table
     return await with_browser(run, 9365)
 
@@ -226,11 +230,28 @@ async def governor(base):
 
 # --- throttled run: 4x CPU, slow network, mobile size; long tasks per route change; LCP and layout shift ---------------
 OBSERVE = """
-window.__long = []; window.__cls = 0; window.__lcp = 0;
+window.__long = []; window.__cls = 0; window.__lcp = 0; window.__lcpEl = ''; window.__shifts = [];
 try { new PerformanceObserver(l => l.getEntries().forEach(e => window.__long.push([Math.round(e.startTime), Math.round(e.duration)]))).observe({type:'longtask', buffered:true}); } catch(e) {}
-try { new PerformanceObserver(l => l.getEntries().forEach(e => { if (!e.hadRecentInput) window.__cls += e.value; })).observe({type:'layout-shift', buffered:true}); } catch(e) {}
-try { new PerformanceObserver(l => l.getEntries().forEach(e => window.__lcp = Math.round(e.startTime))).observe({type:'largest-contentful-paint', buffered:true}); } catch(e) {}
+try { new PerformanceObserver(l => l.getEntries().forEach(e => { if (!e.hadRecentInput) { window.__cls += e.value; window.__shifts.push([Math.round(e.startTime), +e.value.toFixed(3), (e.sources||[]).map(s => s.node ? (s.node.nodeName + '.' + String(s.node.className||'').slice(0,30)) : '?').slice(0,2)]); } })).observe({type:'layout-shift', buffered:true}); } catch(e) {}
+try { new PerformanceObserver(l => l.getEntries().forEach(e => { window.__lcp = Math.round(e.startTime); window.__lcpEl = e.element ? (e.element.nodeName + '.' + String(e.element.className||'').slice(0,30) + ' ' + (e.element.textContent||'').slice(0,30)) : '?'; })).observe({type:'largest-contentful-paint', buffered:true}); } catch(e) {}
 """
+
+
+async def firstload(base):
+    """First load only, mobile size, 4x CPU, slow network: LCP and its element, layout shifts and their sources, long tasks."""
+    async def run(ws):
+        page = await new_page(ws, 390, 800, mobile=True)
+        await page.send("Emulation.setCPUThrottlingRate", rate=4)
+        await page.send("Network.emulateNetworkConditions", offline=False, latency=150, downloadThroughput=int(1.6 * 1024 * 1024 / 8), uploadThroughput=int(750 * 1024 / 8))
+        await page.send("Network.setCacheDisabled", cacheDisabled=True)  # every route is a cold first visit
+        await page.send("Page.addScriptToEvaluateOnNewDocument", source=OBSERVE)
+        out = {}
+        for name in ("home", "graph", "voice", "case", "evidence", "about"):
+            await page.goto(base + ROUTES[name], wait=0)
+            await asyncio.sleep(9)
+            out[name] = json.loads(await page.js("JSON.stringify({lcp: window.__lcp, lcp_element: window.__lcpEl, cls: +window.__cls.toFixed(3), shifts: window.__shifts, long_tasks_ms: window.__long.map(x => x[1])})"))
+        return out
+    return await with_browser(run, 9371)
 
 
 async def throttled(base):
@@ -241,6 +262,7 @@ async def throttled(base):
         await page.send("Page.addScriptToEvaluateOnNewDocument", source=OBSERVE)
         await page.goto(base + "/?perf=1", wait=0)
         await asyncio.sleep(12)
+        print("  first load done", flush=True)
         first = json.loads(await page.js("JSON.stringify({lcp: window.__lcp, cls: window.__cls, long: window.__long})"))
         report = {"first_load": first, "route_changes": {}}
         for name in ("graph", "voice", "case", "evidence", "about", "home"):
@@ -249,6 +271,7 @@ async def throttled(base):
             await asyncio.sleep(0.4)
             await page.js("(()=>{const l=[...document.querySelectorAll('#mobile-menu a')].find(a=>a.textContent.trim()===%s);l&&l.click();return 1})()" % json.dumps(NAV_LABEL[name]))
             await asyncio.sleep(3.5)
+            print("  route", name, flush=True)
             report["route_changes"][name] = {"world": await page.js("document.documentElement.dataset.world"), "long_tasks_ms": await page.js("window.__long.map(x=>x[1])")}
         report["final_cls"] = await page.js("window.__cls")
         # input to visible response: a click on the theme switch until the next frame after it is painted
@@ -263,7 +286,7 @@ async def leaks(base):
         page = await new_page(ws)
         await page.goto(base + "/?perf=1&tier=low", wait=0)
         await asyncio.sleep(5)
-        snap = lambda: page.js("JSON.stringify({geometries: window.__tmPerf.geometries, textures: window.__tmPerf.textures, calls: window.__tmPerf.calls})")
+        snap = lambda: page.js("JSON.stringify(window.__tmInfo())")
         baseline = json.loads(await snap())
         visits = []
         for _ in range(2):
@@ -271,6 +294,7 @@ async def leaks(base):
                 await page.js("[...document.querySelectorAll('nav[aria-label=Pages] a')].find(a => a.textContent.trim()===%s).click(); 1" % json.dumps(NAV_LABEL[name]))
                 await asyncio.sleep(4)
                 visits.append((name, json.loads(await snap())))
+        await asyncio.sleep(2)
         after = json.loads(await snap())
         heap = await page.js("performance.memory ? Math.round(performance.memory.usedJSHeapSize/1048576) : null")
         return {"baseline_home": baseline, "after_two_rounds_home": after, "visits": visits, "js_heap_mb_after": heap,

@@ -2,13 +2,13 @@
    The 3D scenes read these same variables (src/world/palettes.ts), so there is one palette per world.
    Every text colour below was checked for 4.5:1 against the slab and sheet of its own block (scripts/contrast.mjs). */
 
-html:not([data-world]), html[data-world="lost"] { --font-display: "Bricolage Grotesque Variable", var(--font-sans); }
-html[data-world="home"], html[data-world="lost"] { --font-display: "Bricolage Grotesque Variable", var(--font-sans); }
-html[data-world="graph"] { --font-display: "Fraunces Variable", Georgia, serif; }
-html[data-world="voice"] { --font-display: "Unbounded Variable", var(--font-sans); --display-track: -0.02em; }
-html[data-world="case"] { --font-display: "Sofia Sans Extra Condensed Variable", var(--font-sans); --display-track: 0.01em; }
-html[data-world="evidence"] { --font-display: "Fraunces Variable", Georgia, serif; }
-html[data-world="about"] { --font-display: "Martian Mono Variable", var(--font-mono); --display-track: -0.04em; }
+html:not([data-world]), html[data-world="lost"] { --font-display: "Bricolage Grotesque Variable", "Bricolage Fallback", var(--font-sans); }
+html[data-world="home"], html[data-world="lost"] { --font-display: "Bricolage Grotesque Variable", "Bricolage Fallback", var(--font-sans); }
+html[data-world="graph"] { --font-display: "Fraunces Variable", "Fraunces Fallback", Georgia, serif; }
+html[data-world="voice"] { --font-display: "Unbounded Variable", "Unbounded Fallback", var(--font-sans); --display-track: -0.02em; }
+html[data-world="case"] { --font-display: "Sofia Sans Extra Condensed Variable", "Sofia Fallback", var(--font-sans); --display-track: 0.01em; }
+html[data-world="evidence"] { --font-display: "Fraunces Variable", "Fraunces Fallback", Georgia, serif; }
+html[data-world="about"] { --font-display: "Martian Mono Variable", "Martian Fallback", var(--font-mono); --display-track: -0.04em; }
 
 /* ---- Home: The Mesh. Night, amber thread. Bone paper with ink threads in light. ---- */
 html[data-world="home"][data-theme="dark"], html[data-world="lost"][data-theme="dark"], html:not([data-world])[data-theme="dark"] {

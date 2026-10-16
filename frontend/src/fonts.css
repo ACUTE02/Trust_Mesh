@@ -20,3 +20,12 @@
 @font-face { font-family: 'Sofia Sans Extra Condensed Variable'; font-style: normal; font-display: swap; font-weight: 1 1000;
   src: url(../node_modules/@fontsource-variable/sofia-sans-extra-condensed/files/sofia-sans-extra-condensed-latin-wght-normal.woff2) format('woff2-variations');
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+
+/* Stand-ins used while a font loads. Each is Arial scaled to the width and line metrics of the real face (measured in
+   the browser), so the page does not shift when the real font arrives. */
+@font-face { font-family: "Schibsted Fallback"; src: local("Arial"); size-adjust: 101.2%; ascent-override: 96.8%; descent-override: 25.7%; line-gap-override: 0%; }
+@font-face { font-family: "Martian Fallback"; src: local("Arial"); size-adjust: 127.6%; ascent-override: 78.4%; descent-override: 15.7%; line-gap-override: 0%; }
+@font-face { font-family: "Bricolage Fallback"; src: local("Arial"); size-adjust: 99.6%; ascent-override: 93.4%; descent-override: 27.1%; line-gap-override: 0%; }
+@font-face { font-family: "Fraunces Fallback"; src: local("Arial"); size-adjust: 104.6%; ascent-override: 93.7%; descent-override: 24.9%; line-gap-override: 0%; }
+@font-face { font-family: "Unbounded Fallback"; src: local("Arial"); size-adjust: 131.1%; ascent-override: 76.3%; descent-override: 19.1%; line-gap-override: 0%; }
+@font-face { font-family: "Sofia Fallback"; src: local("Arial"); size-adjust: 57.5%; ascent-override: 156.5%; descent-override: 52.2%; line-gap-override: 0%; }

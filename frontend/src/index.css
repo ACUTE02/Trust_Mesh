@@ -45,8 +45,8 @@
   --color-spectrum: var(--spectrum);
   --color-flag: var(--flag);
   --color-track: var(--track);
-  --font-sans: "Schibsted Grotesk Variable", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "Martian Mono Variable", ui-monospace, "Cascadia Mono", monospace;
+  --font-sans: "Schibsted Grotesk Variable", "Schibsted Fallback", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Martian Mono Variable", "Martian Fallback", ui-monospace, "Cascadia Mono", monospace;
   /* Five sizes, ratio 1.25 from 15px, plus the two large sizes used once each. */
   --text-xs: 0.8125rem;
   --text-sm: 0.9375rem;

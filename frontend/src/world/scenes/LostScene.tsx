@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { BufferAttribute, BufferGeometry, Color, IcosahedronGeometry, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial } from "three";
 import { palette } from "../palettes";
 import { live } from "../store";
+import { useCompiled } from "../useCompiled";
 
 const SEGMENTS = 28;
 
@@ -67,6 +68,8 @@ export default function LostScene() {
     state.camera.lookAt(0, 0, 0);
   });
 
+  const ready = useCompiled(() => [rig.thread, rig.node]);
+  if (!ready) return null;
   return (
     <>
       <primitive object={rig.thread} />

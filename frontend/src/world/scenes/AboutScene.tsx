@@ -9,6 +9,7 @@ import {
 } from "three";
 import { palette } from "../palettes";
 import { live } from "../store";
+import { useCompiled } from "../useCompiled";
 import { clamp01, smoothstep } from "../ticker";
 
 const vertex = /* glsl */ `
@@ -135,6 +136,8 @@ export default function AboutScene() {
     state.camera.lookAt(0, 0, 0);
   });
 
+  const ready = useCompiled(() => [...rig.parts.map((p) => p.lines), rig.dimLines]);
+  if (!ready) return null;
   return (
     <group ref={group}>
       {rig.parts.map((p) => (

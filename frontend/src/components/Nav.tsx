@@ -78,7 +78,7 @@ export function Header() {
 
   return (
     <header className="site-header">
-      <div className="relative mx-auto flex max-w-[76rem] flex-wrap items-center gap-x-8 gap-y-2 px-5 py-4 sm:px-8">
+      <div className="relative mx-auto flex min-h-24 max-w-[76rem] flex-wrap items-center gap-x-8 gap-y-2 px-5 py-4 sm:px-8 md:min-h-0">
         <NavLink to="/" className="text-lg font-semibold no-underline" style={{ fontFamily: "var(--font-display)" }}>
           TrustMesh
         </NavLink>

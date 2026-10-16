@@ -4,7 +4,7 @@
 // theme draws the same heights as contour lines on paper.
 export const terrainVertex = /* glsl */ `
   attribute float aH;
-  uniform float uAmp; uniform float uCollapse; uniform float uFog; uniform float uCut; uniform float uTime; uniform float uBreath;
+  uniform float uAmp; uniform float uRise; uniform float uCollapse; uniform float uFog; uniform float uCut; uniform float uTime; uniform float uBreath;
   varying float vH; varying float vFreq; varying float vTime; varying float vFogF;
   void main() {
     vTime = uv.x;
@@ -15,7 +15,7 @@ export const terrainVertex = /* glsl */ `
     vFogF = fogF;
     float h = aH * breathe * (1.0 - 0.9 * fogF) * (1.0 - uCollapse);
     vH = h;
-    vec3 p = position + vec3(0.0, h * uAmp, 0.0);
+    vec3 p = position + vec3(0.0, h * uAmp * uRise, 0.0);
     gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
   }
 `;

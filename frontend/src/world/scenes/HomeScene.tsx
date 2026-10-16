@@ -5,7 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import {
   AdditiveBlending, BufferAttribute, BufferGeometry, Color, IcosahedronGeometry, LineBasicMaterial, LineDashedMaterial,
-  LineSegments, NormalBlending, Points, ShaderMaterial, Vector2, WireframeGeometry,
+  LineSegments, Mesh, NormalBlending, Points, ShaderMaterial, Vector2, WireframeGeometry,
 } from "three";
 import { buildEdges, buildMeshLayout } from "../layouts";
 import { palette } from "../palettes";
@@ -14,6 +14,7 @@ import { TIERS } from "../quality";
 import { engineFragment, engineVertex } from "../shaders/engine";
 import { lineFragment, lineVertex, meshFragment, meshVertex } from "../shaders/mesh";
 import { live, useUi } from "../store";
+import { useCompiled } from "../useCompiled";
 
 const CHAPTER_ATTRS = ["aT0", "aT1", "aT2", "aT3", "aT4"];
 
@@ -65,10 +66,15 @@ export default function HomeScene() {
     ghostSource.dispose();
     const ghost = new LineSegments(ghostGeo, new LineDashedMaterial({ dashSize: 0.1, gapSize: 0.09, transparent: true }));
     ghost.computeLineDistances();
+    ghost.position.set(3.4, -1.5, 1.2); // the Visual slot: hollow and dashed
+    const graphMesh = new Mesh(engineGeo, graphMat);
+    graphMesh.position.set(2.3, 1.7, 1.2);
+    const voiceMesh = new Mesh(engineGeo, voiceMat);
+    voiceMesh.position.set(4.9, 0.8, 1.2);
     const cutGeo = new BufferGeometry();
     cutGeo.setAttribute("position", new BufferAttribute(new Float32Array([-6.5, 0.8, 0, 6.5, 0.8, 0]), 3));
     const cut = new LineSegments(cutGeo, new LineBasicMaterial({ transparent: true }));
-    return { shared, pointMat, lineMat, engineGeo, graphMat, voiceMat, ghost, cut, pointsObj: new Points(points, pointMat), linesObj: new LineSegments(lines, lineMat) };
+    return { shared, pointMat, lineMat, engineGeo, graphMat, voiceMat, graphMesh, voiceMesh, ghost, cut, pointsObj: new Points(points, pointMat), linesObj: new LineSegments(lines, lineMat) };
     // The geometry objects are replaced when the tier changes the node count (see the effect below).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -92,8 +98,7 @@ export default function HomeScene() {
     };
   }, [rig]);
 
-  // Placed once; the engine nodes are meshes, so they are not part of the point cloud.
-  const engines = useMemo(() => ({ graph: [2.3, 1.7, 1.2], voice: [4.9, 0.8, 1.2], visual: [3.4, -1.5, 1.2] }), []);
+  const ready = useCompiled(() => [rig.linesObj, rig.pointsObj, rig.graphMesh, rig.voiceMesh, rig.ghost, rig.cut]);
 
   const stageRef = useRef(0);
   useFrame((state, dt) => {
@@ -138,13 +143,14 @@ export default function HomeScene() {
     cm.color.copy(palette.flag);
   });
 
+  if (!ready) return null;
   return (
     <group>
       <primitive object={rig.linesObj} frustumCulled={false} />
       <primitive object={rig.pointsObj} frustumCulled={false} />
-      <mesh geometry={rig.engineGeo} material={rig.graphMat} position={engines.graph as [number, number, number]} />
-      <mesh geometry={rig.engineGeo} material={rig.voiceMat} position={engines.voice as [number, number, number]} />
-      <primitive object={rig.ghost} position={engines.visual} />
+      <primitive object={rig.graphMesh} />
+      <primitive object={rig.voiceMesh} />
+      <primitive object={rig.ghost} />
       <primitive object={rig.cut} />
     </group>
   );

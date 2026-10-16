@@ -32,31 +32,52 @@ export function terrainHeights(samples: Float32Array, cols: number, rows: number
   return out;
 }
 
-/**
- * A short stretch of vowel-like sound made from scratch (a voice-pitch sweep through two formants, in syllables), so
- * the idle terrain is built the same way as a real clip's. Deterministic: the same call gives the same samples.
- */
-export function synthSpeech(seconds = 2.6, rate = TERRAIN_RATE): Float32Array {
-  const n = Math.floor(seconds * rate);
-  const out = new Float32Array(n);
-  const formants: [number, number][] = [[700, 1200], [400, 2200], [550, 1700], [300, 2500], [650, 1100]];
-  let phase = 0;
-  for (let i = 0; i < n; i++) {
+const FORMANTS: [number, number][] = [[700, 1200], [400, 2200], [550, 1700], [300, 2500], [650, 1100]];
+
+/** Fills out[from..to) with the vowel-like stand-in; `phase` carries the oscillator phase from one slice to the next. */
+function synthSlice(out: Float32Array, from: number, to: number, rate: number, state: { phase: number }) {
+  for (let i = from; i < to; i++) {
     const t = i / rate;
     const syllable = Math.floor(t * 2.4);
     const inSyl = (t * 2.4) % 1;
     const env = Math.sin(Math.PI * Math.min(1, inSyl * 1.15)) ** 1.5;
     const f0 = 118 + 38 * Math.sin(t * 1.9) + syllable * 6;
-    phase += (2 * Math.PI * f0) / rate;
-    const [f1, f2] = formants[syllable % formants.length];
+    state.phase += (2 * Math.PI * f0) / rate;
+    const [f1, f2] = FORMANTS[syllable % FORMANTS.length];
     let v = 0;
     for (let h = 1; h <= 28; h++) {
       const f = h * f0;
       if (f > 7600) break;
       const g = Math.exp(-Math.pow((f - f1) / 160, 2)) + 0.6 * Math.exp(-Math.pow((f - f2) / 230, 2)) + 0.05 / h;
-      v += (g / h ** 0.35) * Math.sin(h * phase);
+      v += (g / h ** 0.35) * Math.sin(h * state.phase);
     }
     out[i] = 0.2 * env * v;
+  }
+}
+
+/**
+ * A short stretch of vowel-like sound made from scratch (a voice-pitch sweep through two formants, in syllables), so
+ * the idle terrain is built the same way as a real clip's. Deterministic: the same call gives the same samples.
+ */
+export function synthSpeech(seconds = 2.6, rate = TERRAIN_RATE): Float32Array {
+  const out = new Float32Array(Math.floor(seconds * rate));
+  synthSlice(out, 0, out.length, rate, { phase: 0 });
+  return out;
+}
+
+/** The same samples, made in short slices with a pause between them, so a slow device is never held up for long. */
+export async function synthSpeechAsync(seconds = 2.6, rate = TERRAIN_RATE, sliceMs = 6): Promise<Float32Array> {
+  const out = new Float32Array(Math.floor(seconds * rate));
+  const state = { phase: 0 };
+  let i = 0;
+  while (i < out.length) {
+    const t0 = performance.now();
+    while (i < out.length && performance.now() - t0 < sliceMs) {
+      const to = Math.min(out.length, i + 512);
+      synthSlice(out, i, to, rate, state);
+      i = to;
+    }
+    await new Promise<void>((r) => setTimeout(r, 0));
   }
   return out;
 }

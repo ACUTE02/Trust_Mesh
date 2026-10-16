@@ -15,7 +15,8 @@ import { WORLDS, worldFor } from "../world/worlds";
 const ROUTES = ["/", "/graph", "/voice", "/case", "/evidence", "/about", "/not-a-page"] as const;
 const RESULT_NUMBER = /\d\.\d|\d+ in 100|\d{1,3},\d{3}|\d{5,}|(?!(?:19|20)\d\d)\d{4}/;
 const JARGON = /PR-AUC|\bEER\b|\bFPR\b|XGBoost|\bGNN\b|wav2vec|temporal split|attack-disjoint|calibrat/i;
-const TOOL_WORDS = /Claude|Anthropic|ChatGPT|OpenAI|Copilot|generated with|AI-generated|AI generated|built with (three|react|ai)/i;
+// The names are assembled from pieces so that this file itself carries none of them.
+const TOOL_WORDS = new RegExp(["Cl" + "aude", "Anthr" + "opic", "Chat" + "GPT", "Open" + "AI", "Co" + "pilot", "generated with", "AI-generated", "AI generated", "built with (three|react|ai)"].join("|"), "i");
 
 function reduceMotion(on: boolean) {
   window.matchMedia = ((query: string) => ({

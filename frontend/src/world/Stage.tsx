@@ -46,7 +46,12 @@ function Driver({ perf }: { perf: boolean }) {
     canvas.addEventListener("webglcontextlost", lost);
     setUi({ tier: TIER_ORDER[tierIndex], webgl: true, stageReady: true });
     // with ?perf=1 the scene data is readable from the console, so a test can check what the scenes were handed
-    if (perf) (window as unknown as { __tmLive?: typeof live }).__tmLive = live;
+    if (perf) {
+      const w = window as unknown as { __tmLive?: typeof live; __tmInfo?: () => Record<string, number> };
+      w.__tmLive = live;
+      // live counters of the renderer: what the last drawn frame cost and what is held in memory right now
+      w.__tmInfo = () => ({ calls: gl.info.render.calls, triangles: gl.info.render.triangles, geometries: gl.info.memory.geometries, textures: gl.info.memory.textures });
+    }
 
     const stop = onTick((t) => {
       live.time = t;
@@ -68,10 +73,12 @@ function Driver({ perf }: { perf: boolean }) {
       const span = now - spanStart;
       if (frames >= 30 && now > cooldownUntil && pinned < 0) {
         const fps = (frames * 1000) / Math.max(span, 1);
-        if (fps < 45 && tierIndex > 0) {                       // demote quickly on a dip
+        // "holds about 57 fps" for a scene that draws every frame; a scene that asked for 30 is judged against 30
+        const goal = live.fpsCap || 60;
+        if (fps < goal * 0.75 && tierIndex > 0) {              // demote quickly on a dip
           tierIndex--; ceiling = Math.min(ceiling, tierIndex); goodWindows = 0; cooldownUntil = now + 5000;
           setUi({ tier: TIER_ORDER[tierIndex] });
-        } else if (fps >= 57) {                                // promote only after three good windows in a row
+        } else if (fps >= goal * 0.95) {                       // promote only after three good windows in a row
           if (++goodWindows >= 3 && tierIndex < ceiling) {
             tierIndex++; goodWindows = 0; cooldownUntil = now + 5000;
             setUi({ tier: TIER_ORDER[tierIndex] });

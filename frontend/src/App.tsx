@@ -4,18 +4,14 @@ import { Footer } from "./components/Footer";
 import { CursorLabel } from "./components/interactions";
 import { Header } from "./components/Nav";
 import { Poster } from "./components/Poster";
-import { GraphPage } from "./pages/GraphPage";
 import { Landing } from "./pages/Landing";
-import { VoicePage } from "./pages/VoicePage";
+import { AboutPage, CasePage, EvidencePage, GraphPage, VoicePage } from "./pages/loaders";
 import { useMotionPrefs, webglAvailable } from "./world/prefs";
 import { jumpTo, startSmoothScroll, trackPointer } from "./world/smooth";
 import { live, markDirty, setUi, useUi } from "./world/store";
 import { WORLDS, worldFor, type WorldId } from "./world/worlds";
 
-// Pages of the newer worlds load on demand; the three first pages are part of the first load.
-const CasePage = lazy(() => import("./pages/CasePage"));
-const EvidencePage = lazy(() => import("./pages/EvidencePage"));
-const AboutPage = lazy(() => import("./pages/AboutPage"));
+// The Overview is part of the first load; every other page, and the 3D stage, load on demand.
 const Stage = lazy(() => import("./world/Stage"));
 
 /** The 3D stage, loaded after first paint, or the still poster when there is no WebGL, data saving is on, or the context is lost. */
@@ -152,7 +148,8 @@ export default function App() {
       </a>
       <Header />
       <main id="main" key={fade} data-fade={fade ? "1" : undefined} className="mx-auto max-w-[76rem] px-5 sm:px-8">
-        <Suspense fallback={<p className="py-24 text-ink-soft">Loading the page.</p>}>
+        {/* The placeholder is a full screen tall, so the footer stays below the fold until the page arrives and nothing jumps. */}
+        <Suspense fallback={<p className="py-24 text-ink-soft" style={{ minHeight: "100svh" }}>Loading the page.</p>}>
           <Routes location={shown}>
             <Route path="/" element={<Landing />} />
             <Route path="/graph" element={<GraphPage />} />

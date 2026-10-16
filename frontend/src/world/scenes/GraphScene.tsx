@@ -11,6 +11,7 @@ import { readPrefs } from "../prefs";
 import { TIERS } from "../quality";
 import { beadFragment, beadVertex, threadFragment, threadVertex } from "../shaders/beads";
 import { live, useUi } from "../store";
+import { useCompiled } from "../useCompiled";
 import { smoothstep } from "../ticker";
 
 /** What the page tells the scene (set in GraphPage; read here). Bars come from the data module, neighbours from the live query. */
@@ -134,6 +135,8 @@ export default function GraphScene() {
     state.camera.lookAt(0, 0, 0);
   });
 
+  const ready = useCompiled(() => [rig.threads, points]);
+  if (!ready) return null;
   return (
     <group ref={group}>
       <primitive object={rig.threads} frustumCulled={false} />

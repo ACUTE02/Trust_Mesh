@@ -10,6 +10,7 @@ import {
 import { EMPTY_DRAWERS, ENVELOPE_DRAWER, EXHIBIT_DRAWERS, WALL_COLS, WALL_ROWS, type EvidenceSceneData } from "../evidenceData";
 import { palette } from "../palettes";
 import { live } from "../store";
+import { useCompiled } from "../useCompiled";
 import { smoothstep } from "../ticker";
 
 const W = 2.0, H = 1.3, GAP_X = 0.14, GAP_Y = 0.16, D = 1.1;
@@ -141,6 +142,8 @@ export default function EvidenceScene() {
     state.camera.lookAt(A.at[0] + (B.at[0] - A.at[0]) * f, A.at[1] + (B.at[1] - A.at[1]) * f, 0);
   });
 
+  const ready = useCompiled(() => [rig.drawers, rig.faces, rig.empties, rig.seal, ...rig.lights]);
+  if (!ready) return null;
   return (
     <>
       <primitive object={rig.lights[0]} />

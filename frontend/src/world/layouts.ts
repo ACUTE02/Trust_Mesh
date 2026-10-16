@@ -62,10 +62,11 @@ export function buildMeshLayout(count: number, seed = 7): MeshLayout {
 export function buildEdges(layout: MeshLayout, radius = 1.15): Uint32Array {
   const p = layout.targets[0];
   const cell = radius;
-  const grid = new Map<string, number[]>();
-  const cellKey = (x: number, y: number, z: number) => `${Math.floor(x / cell)},${Math.floor(y / cell)},${Math.floor(z / cell)}`;
+  // the grid is keyed by one integer per cell (no string building: this runs when a world opens)
+  const key = (cx: number, cy: number, cz: number) => (cx + 64) * 16384 + (cy + 64) * 128 + (cz + 64);
+  const grid = new Map<number, number[]>();
   for (let i = 0; i < layout.count; i++) {
-    const k = cellKey(p[i * 3], p[i * 3 + 1], p[i * 3 + 2]);
+    const k = key(Math.floor(p[i * 3] / cell), Math.floor(p[i * 3 + 1] / cell), Math.floor(p[i * 3 + 2] / cell));
     const bucket = grid.get(k);
     if (bucket) bucket.push(i);
     else grid.set(k, [i]);
@@ -79,7 +80,7 @@ export function buildEdges(layout: MeshLayout, radius = 1.15): Uint32Array {
     for (let dx = -1; dx <= 1 && degree[i] < 2; dx++)
       for (let dy = -1; dy <= 1 && degree[i] < 2; dy++)
         for (let dz = -1; dz <= 1 && degree[i] < 2; dz++) {
-          for (const j of grid.get(`${cx + dx},${cy + dy},${cz + dz}`) ?? []) {
+          for (const j of grid.get(key(cx + dx, cy + dy, cz + dz)) ?? []) {
             if (j <= i || degree[j] >= 3) continue;
             const d = (p[j * 3] - x) ** 2 + (p[j * 3 + 1] - y) ** 2 + (p[j * 3 + 2] - z) ** 2;
             if (d < r2 && degree[i] < 2) {

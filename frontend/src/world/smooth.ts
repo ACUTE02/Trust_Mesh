@@ -1,7 +1,7 @@
 // Smooth scroll. Lenis is driven from the shared ticker (no loop of its own) and publishes the scroll
 // position to `live`, which the 3D scenes read. With reduced motion, or a touch screen, native scrolling is
 // left alone: touch scrolling is already smooth and must not be hijacked.
-import Lenis from "lenis";
+import type Lenis from "lenis";
 import { onTick } from "./ticker";
 import { live, markDirty } from "./store";
 
@@ -20,17 +20,23 @@ export function startSmoothScroll(opts: { reduced: boolean; touch: boolean }): (
   stopSmoothScroll();
   const onScroll = () => publish(window.scrollY, 0);
   window.addEventListener("scroll", onScroll, { passive: true });
+  let cancelled = false;
   if (!opts.reduced && !opts.touch && typeof ResizeObserver !== "undefined") {
-    try {
-      lenis = new Lenis({ autoRaf: false, lerp: 0.11, smoothWheel: true, syncTouch: false });
-      lenis.on("scroll", (l: Lenis) => publish(l.scroll, l.velocity));
-      stopTick = onTick((t) => lenis?.raf(t * 1000));
-    } catch {
-      lenis = null; // native scrolling still works
-    }
+    // Lenis is fetched after the page is up (it is not needed to read anything); until then scrolling is native.
+    void import("lenis")
+      .then(({ default: Lenis }) => {
+        if (cancelled) return;
+        lenis = new Lenis({ autoRaf: false, lerp: 0.11, smoothWheel: true, syncTouch: false });
+        lenis.on("scroll", (l: Lenis) => publish(l.scroll, l.velocity));
+        stopTick = onTick((t) => lenis?.raf(t * 1000));
+      })
+      .catch(() => {
+        lenis = null; // native scrolling still works
+      });
   }
   publish(window.scrollY, 0);
   return () => {
+    cancelled = true;
     window.removeEventListener("scroll", onScroll);
     stopSmoothScroll();
   };

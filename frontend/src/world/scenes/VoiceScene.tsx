@@ -4,12 +4,13 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import { BufferAttribute, BufferGeometry, Color, Mesh, ShaderMaterial } from "three";
-import { synthSpeech, terrainHeights } from "../../lib/terrain";
+import { synthSpeechAsync, terrainHeights } from "../../lib/terrain";
 import { palette } from "../palettes";
 import { readPrefs } from "../prefs";
 import { TIERS } from "../quality";
 import { terrainFragment, terrainVertex } from "../shaders/terrain";
 import { live, useUi } from "../store";
+import { useCompiled } from "../useCompiled";
 import { smoothstep } from "../ticker";
 import type { VoiceSceneData } from "../voiceData";
 
@@ -57,7 +58,7 @@ export default function VoiceScene() {
     const material = new ShaderMaterial({
       vertexShader: terrainVertex, fragmentShader: terrainFragment, transparent: true,
       uniforms: {
-        uAmp: { value: 2.6 }, uCollapse: { value: 0 }, uFog: { value: 0 }, uCut: { value: 0.6 }, uTime: { value: 0 }, uBreath: { value: 1 },
+        uAmp: { value: 2.6 }, uRise: { value: 0 }, uCollapse: { value: 0 }, uFog: { value: 0 }, uCut: { value: 0.6 }, uTime: { value: 0 }, uBreath: { value: 1 },
         uContour: { value: 0 }, uPaper: { value: new Color() }, uInk: { value: new Color() }, uFogColor: { value: new Color() },
         uGlow: { value: new Color() }, uScoreX: { value: 0 }, uScoreOn: { value: 0 }, uAlpha: { value: 1 },
       },
@@ -68,12 +69,18 @@ export default function VoiceScene() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const idle = useMemo(() => synthSpeech(), []);
+  // The idle terrain is built from a synthesised stretch of sound, made in small slices after the scene opens (never
+  // in one long step); until it is ready the land is flat, then it rises.
+  const idle = useRef<Float32Array | null>(null);
+  const rise = useRef(0);
   const seen = useRef(-1);
   const collapse = useRef(0), fog = useRef(0), scoreT = useRef(0), cut = useRef(0.6), stage = useRef(0);
 
   // fill the height attribute for the current samples at this tier's resolution; replace the geometry when the tier changes it
-  const heightsFor = (d: VoiceSceneData | undefined) => terrainHeights(d?.samples ?? idle, cols, rows);
+  const heightsFor = (d: VoiceSceneData | undefined) => {
+    const samples = d?.samples ?? idle.current;
+    return samples ? terrainHeights(samples, cols, rows) : new Float32Array(cols * rows);
+  };
   useEffect(() => {
     rig.mesh.geometry = geometry;
     (geometry.attributes.aH.array as Float32Array).set(heightsFor(live.data.voice as VoiceSceneData | undefined));
@@ -81,7 +88,20 @@ export default function VoiceScene() {
     live.dirty = true;
     return () => geometry.dispose();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [geometry, rig, idle]);
+  }, [geometry, rig]);
+
+  useEffect(() => {
+    let alive = true;
+    void synthSpeechAsync().then((samples) => {
+      if (!alive) return;
+      idle.current = samples;
+      seen.current = -1; // refill the heights on the next frame
+      live.dirty = true;
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     live.continuous = !live.reduced;
@@ -95,7 +115,11 @@ export default function VoiceScene() {
 
   useFrame((state, dt) => {
     const d = live.data.voice as VoiceSceneData | undefined;
-    if (d && d.version !== seen.current) {
+    if (seen.current === -1 && (idle.current || d?.samples)) {
+      seen.current = d?.version ?? 0;
+      (geometry.attributes.aH.array as Float32Array).set(heightsFor(d));
+      geometry.attributes.aH.needsUpdate = true;
+    } else if (d && d.version !== seen.current) {
       seen.current = d.version;
       (geometry.attributes.aH.array as Float32Array).set(heightsFor(d));
       geometry.attributes.aH.needsUpdate = true;
@@ -114,6 +138,9 @@ export default function VoiceScene() {
     if (Math.abs(wantCollapse - collapse.current) > 1 / 200 || Math.abs(wantFog - fog.current) > 1 / 200 || Math.abs(target - stage.current) > 1 / 200 || (d?.verdict && scoreT.current < 1)) live.dirty = true;
 
     const u = rig.material.uniforms;
+    if (idle.current || d?.samples) rise.current += (1 - rise.current) * (live.reduced ? 1 : 1 - Math.exp(-dt * 2.5));
+    if (1 - rise.current > 1 / 200) live.dirty = true;
+    u.uRise.value = rise.current;
     u.uTime.value = live.reduced ? 1 : live.time;
     u.uBreath.value = live.reduced ? 0 : 1;
     u.uCollapse.value = collapse.current;
@@ -138,5 +165,6 @@ export default function VoiceScene() {
     state.camera.lookAt(0, 0.4, 0);
   });
 
-  return <primitive object={rig.mesh} />;
+  const ready = useCompiled(() => [rig.mesh]);
+  return ready ? <primitive object={rig.mesh} /> : null;
 }
