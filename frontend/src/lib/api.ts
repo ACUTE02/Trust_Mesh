@@ -11,6 +11,9 @@ export interface Health {
     serving_default?: string;
     weights?: Record<string, string | null>;
     fallback_active?: boolean;
+    loaded?: string[];
+    opt_in?: Record<string, boolean>;
+    model_labels?: Record<string, string>;
     error?: string | null;
   };
   neo4j: { connected: boolean; nodes?: number; edges?: number };
@@ -67,9 +70,10 @@ export interface VoiceScore {
   score: number;
   verdict: Verdict;
   model: string;
+  model_label?: string;
   model_requested: string;
   fallback_used: boolean;
-  thresholds: { medium: number; high: number; source: string };
+  thresholds: { medium: number; high: number; source: string; single_band?: boolean };
   duration_s: number;
   speech_s: number;
   lead_silence_s?: number;
@@ -170,7 +174,12 @@ export const api = {
     request<{ connected: boolean; path: null | { hops: number; path: { node_id: number; ground_truth: string; verdict: Verdict }[] } }>(
       `/graph/query/path?source=${source}&target=${target}`,
     ),
-  voiceScore: (wav: Blob, name: string) => request<VoiceScore>("/voice/score", { method: "POST", body: audioForm(wav, name) }),
+  /** `model` is sent only for an opt-in choice (F2). The default model D is never named, so the service picks it. */
+  voiceScore: (wav: Blob, name: string, model?: string) =>
+    request<VoiceScore>(`/voice/score${model && model !== "D" ? `?model=${encodeURIComponent(model)}` : ""}`, {
+      method: "POST",
+      body: audioForm(wav, name),
+    }),
   caseScore: (nodeId: number, wav: Blob, name: string) =>
     request<CaseScore>("/case/score", { method: "POST", body: audioForm(wav, name, { node_id: String(nodeId) }) }),
 };

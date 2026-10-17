@@ -62,6 +62,13 @@ would hope for the genuine side: a low score and "low risk". Write down what you
 Compressed phone audio seems to confuse this model. So do not be surprised if your own voice is flagged. See
 `docs/SELF_TEST_REPORT.md`, section 6.
 
+**Voice model choice.** Under the recording controls there is a small "Voice model" choice. D is the default and the
+main model. F2 appears only when the service has its private weights; it was trained on copies of the training audio
+that had been compressed like phone audio. Try your own phone memo with D and then with F2 and write both down. The
+page names the model that scored (F2 says it is the mean of seeds 42, 43 and 44). F2 reduced the compressed-audio
+problem in a synthetic test and did not remove it; it was not tested on real phone calls. The combined case desk always
+uses D. Through the API: `POST /voice/score?model=F2`.
+
 3. Make a fake clip with any free text-to-speech tool. Save it as MP3 or WAV. Upload it and score it. Write down
    what you got.
 

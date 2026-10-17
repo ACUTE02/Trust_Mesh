@@ -6,6 +6,7 @@ import { DotPlot, type PlotRow } from "../components/DotPlot";
 import { EngineerLayer, EngineerToggle, ForEngineers, Glossary, Meaning, VOICE_SCORE_MEANING } from "../components/engineers";
 import { CaveatNote, EvidenceRow, Live, Marker, Num } from "../components/evidence";
 import { KineticText } from "../components/KineticText";
+import { VoiceModelChoice, type VoiceChoice } from "../components/voiceModel";
 import { TechView } from "../components/TechView";
 import { TwoScoresInstrument } from "../components/TwoScoresInstrument";
 import { ApiError, api, readCallLog, startCallLog, type ApiCall, type VoiceScore } from "../lib/api";
@@ -78,6 +79,7 @@ function VoiceDesk({ onResult }: { onResult?: (r: VoiceScore | null) => void }) 
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<VoiceScore | null>(null);
   const [calls, setCalls] = useState<ApiCall[]>([]);
+  const [model, setModel] = useState<VoiceChoice>("D");
 
   // The terrain behind the page follows the clip, then the service's answer: score light, fog bank, or collapse.
   useEffect(() => {
@@ -97,7 +99,7 @@ function VoiceDesk({ onResult }: { onResult?: (r: VoiceScore | null) => void }) 
     setResult(null);
     startCallLog();
     try {
-      setResult(await api.voiceScore(clip.wav, clip.name));
+      setResult(await api.voiceScore(clip.wav, clip.name, model));
     } catch (e) {
       if (e instanceof ApiError && e.status === 422 && /does not look like speech/.test(e.message)) publishVoice({ notSpeech: true });
       setError(errorText(e));
@@ -117,6 +119,15 @@ function VoiceDesk({ onResult }: { onResult?: (r: VoiceScore | null) => void }) 
           setResult(null);
           setError(null);
           publishVoice({ samples: c?.samples ?? null, verdict: null, notSpeech: false, lowQuality: false, cutoffHz: null });
+        }}
+      />
+      <VoiceModelChoice
+        health={health}
+        value={model}
+        onChange={(m) => {
+          setModel(m);
+          setResult(null);
+          setError(null);
         }}
       />
       {clip && <ClipView clip={clip} leadSilence={result?.lead_silence_s} trailSilence={result?.trail_silence_s} />}
@@ -148,12 +159,22 @@ function VoiceDesk({ onResult }: { onResult?: (r: VoiceScore | null) => void }) 
             </p>
           )}
           <p className="measure mt-3 mb-0 text-sm">
-            Scored by: <ModelInUse model={result.model} requested={result.model_requested} fallback={result.fallback_used} />.
+            Scored by: <ModelInUse model={result.model} label={result.model_label} requested={result.model_requested} fallback={result.fallback_used} />.
           </p>
           <p className="measure mt-2 mb-0 text-sm">
-            Medium risk starts at <Live>{result.thresholds.medium.toFixed(4)}</Live>. High risk starts at{" "}
-            <Live>{result.thresholds.high.toFixed(4)}</Live>. These levels were set using the same test recordings. So they
-            do not tell you how often a real caller would be wrongly flagged.
+            {result.thresholds.single_band ? (
+              <>
+                This model has one line, not two. High risk starts at <Live>{result.thresholds.high.toFixed(4)}</Live>; below it
+                the result is low risk, and there is no medium band. The line is the one setting recorded for this model on clean
+                recordings. It was not recalibrated, so it does not tell you how often a real caller would be wrongly flagged.
+              </>
+            ) : (
+              <>
+                Medium risk starts at <Live>{result.thresholds.medium.toFixed(4)}</Live>. High risk starts at{" "}
+                <Live>{result.thresholds.high.toFixed(4)}</Live>. These levels were set using the same test recordings. So they
+                do not tell you how often a real caller would be wrongly flagged.
+              </>
+            )}
           </p>
           <p className="measure mt-2 mb-0 text-sm text-ink-soft">
             Silence at both ends was removed before scoring. Your recording had <Live>{result.speech_s.toFixed(1)}</Live> seconds
@@ -252,8 +273,17 @@ export function VoicePage() {
                 Reported by the service for the last clip you scored:{" "}
                 {result ? (
                   <>
-                    model <Live>{result.model}</Live>, medium risk from <Live>{result.thresholds.medium.toFixed(4)}</Live>, high risk
-                    from <Live>{result.thresholds.high.toFixed(4)}</Live>.
+                    model <Live>{result.model_label ?? result.model}</Live>,{" "}
+                    {result.thresholds.single_band ? (
+                      <>
+                        one line only: high risk from <Live>{result.thresholds.high.toFixed(4)}</Live>.
+                      </>
+                    ) : (
+                      <>
+                        medium risk from <Live>{result.thresholds.medium.toFixed(4)}</Live>, high risk from{" "}
+                        <Live>{result.thresholds.high.toFixed(4)}</Live>.
+                      </>
+                    )}
                   </>
                 ) : (
                   "nothing yet; score a clip above."

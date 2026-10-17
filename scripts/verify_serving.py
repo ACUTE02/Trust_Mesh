@@ -64,6 +64,23 @@ def main():
         check("/case/score fuses both real scores", abs(f["combined_score"] - expected) < 1e-9,
               f"(graph {r['graph']['score']:.3f} + voice {r['voice']['score']:.3f} -> {f['combined_score']:.3f} {f['combined_verdict']})")
 
+    # F2 (opt-in, Phase 2D): skipped with a message when its private weights are not installed.
+    voice_health = h["voice"]
+    check("the default voice model is D", voice_health.get("serving_default") == "D" and not voice_health.get("fallback_active"),
+          f"(serving {voice_health.get('serving_default')})")
+    if clips and voice_health.get("opt_in", {}).get("F2"):
+        d = requests.post(f"{args.api}/voice/score", data={"clip": clips[0]["clip"]}, params=quiet, timeout=300).json()
+        f2 = requests.post(f"{args.api}/voice/score", data={"clip": clips[0]["clip"]}, params={**quiet, "model": "F2"}, timeout=300).json()
+        check("?model=F2 is scored by F2 and the default by D", f2["model"] == "F2" and d["model"] == "D",
+              f"(D {d['verdict']}, F2 {f2['verdict']}; {f2.get('model_label')})")
+        c = requests.post(f"{args.api}/case/score", data={"node_id": args.node, "clip": clips[0]["clip"]},
+                          params={**quiet, "model": "F2"}, timeout=300).json()
+        check("/case/score ignores an F2 request and uses D", c["voice"]["model"] == "D")
+    elif clips:
+        print("[skip] F2 checks: the F2 weights are not installed on this server (they are private); F2 reports unavailable")
+        r2 = requests.post(f"{args.api}/voice/score", data={"clip": clips[0]["clip"]}, params={**quiet, "model": "F2"}, timeout=300)
+        check("?model=F2 without weights gives a plain 422, not a traceback", r2.status_code == 422 and "not available" in r2.text)
+
     flagged = get("/cases/flagged").json()["cases"]
     check("flagged cases, if any, are listed highest risk first",
           flagged == sorted(flagged, key=lambda c: -c["risk_score"]), f"({len(flagged)} rows)")

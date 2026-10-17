@@ -9,8 +9,10 @@ export function ModelInUse({
   requested,
   fallback,
   weightsFile,
+  label,
 }: {
   model: string | undefined;
+  label?: string;
   requested?: string;
   fallback?: boolean;
   weightsFile?: string | null;
@@ -18,7 +20,7 @@ export function ModelInUse({
   if (!model) return <span className="text-ink-soft">voice model unknown (the service did not report one)</span>;
   return (
     <span data-testid="model-in-use">
-      Voice model {model}
+      Voice model {label ?? model}
       {weightsFile && (
         <>
           {" "}

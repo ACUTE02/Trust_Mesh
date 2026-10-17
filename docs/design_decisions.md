@@ -1466,6 +1466,40 @@ register.
    6 ms slices, grid keys as numbers): the Voice route's longest task fell from 603 ms to 234 ms.
 
 
+## F2 as an opt-in voice model (2026-10-18)
+
+Model D stays the default everywhere. The Phase 2D head F2 can be chosen on the Voice page ("Voice model") or with
+`POST /voice/score?model=F2`. Nothing else about the default behaviour changed: D's scores, thresholds and bands are the
+same, `/case/score` always uses D (an F2 request there is ignored), and the fusion never sees F2.
+
+**Why opt-in.** All pre-registered Phase 2D criteria passed, but against a control that was weaker than served D (clean
+error rate 0.0254 against 0.0166), on synthetic conditions, with ranking better on 1 of 4 unseen codecs, and F2's clean
+error rate (0.0199) is about equal to served seed 42 (0.0194). That supports "reduced, not removed", not a replacement.
+
+**Which seeds.** F2 is scored as the mean of the bonafide logits of its three seed heads (42, 43, 44). The Phase 2D result
+was computed on the seed-averaged score, so this is the object the published numbers describe; D is served as seed 42 only.
+The frozen encoder runs once per clip; the three heads add a negligible cost. The page and the response say which seeds
+scored ("F2 (mean of seeds 42, 43 and 44)").
+
+**Thresholds.** F2's per-clip test scores were not saved, so D's way of setting bands (on test scores) cannot be repeated,
+and no local clip was used to set anything. What exists is one recorded number: the threshold at the equal-error point on the
+clean validation clips, `evaluation.thresholds_clean_val_eer.F2 = 0.19378728093336556` in `results_phase2d.json`. The notebook's
+score is the seed-averaged bonafide logit (a clip below the threshold is flagged), which is the service's logit, so the number
+maps exactly to a spoof probability: 1 / (1 + exp(0.19378728)) = 0.4517. F2 therefore has **one band**: high risk from that
+line, low risk below it, and no medium band (the response says `single_band: true`). It is the line behind the published
+"genuine clips flagged" shares, not a rate for real callers, and it was not recalibrated.
+
+**Weights stay private.** `artifacts/voice/phase2d_F2_s42.pt`, `_s43.pt` and `_s44.pt` are git-ignored and are not baked into any
+image: the API container reads `artifacts/` through the existing read-only bind mount, the same way it reads D's weights. All
+three files must be present; with fewer, F2 is reported as unavailable. Without them the service starts normally, `/health` shows
+`opt_in: {F2: false}`, `?model=F2` returns a plain 422 ("not available on this server"), and the Voice page hides the choice. The
+audio-quality guard applies to F2 exactly as to D.
+
+**What is not claimed.** That F2 fixes phone audio (it reduced the problem in a synthetic test); that it works on real phone calls
+(not tested); that its line gives any false-alarm rate; that it is better than D on clean audio; anything about the combined score.
+Numbers on the page come from the data module (`p2d.*`), sourced to "Phase 2D FULL results" above, and are re-checked by
+`scripts/check_frontend_numbers.py`.
+
 ## Open items (not yet built)
 
 - `engines/graph/`: built for everything Phase 1D uses. The Phase 1–1C-only pieces (GAT, GIN,

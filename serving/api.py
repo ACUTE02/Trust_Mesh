@@ -221,7 +221,7 @@ def create_app(graph=None, voice=None, neo4j=None, cases=None, load_on_startup=T
 
     @app.post("/voice/score")
     async def voice_score(file: UploadFile | None = File(None), clip: str | None = Form(None),
-                          model: str | None = Query(None, description="'D' (default) or 'C' (fallback)"),
+                          model: str | None = Query(None, description="'D' (default), 'C' (fallback) or 'F2' (opt-in, if installed)"),
                           record: bool = Query(True, description="false = do not write a row to the cases table")):
         blob, name = await read_audio(file, clip)
         # CPU-bound inference runs in a worker thread so it does not block the event loop (other requests,
@@ -241,6 +241,8 @@ def create_app(graph=None, voice=None, neo4j=None, cases=None, load_on_startup=T
         known_node(node_id)
         blob, name = await read_audio(file, clip)
         graph = graph_svc().score(node_id)
+        if model == "F2":  # opt-in on /voice/score only: the case desk and fusion always use the default model
+            model = None
         voice = await run_in_threadpool(score_voice, blob, model)
         try:
             fused = fuse(graph["score"], voice["score"], w_graph, w_voice)
