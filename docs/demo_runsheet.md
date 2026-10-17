@@ -49,7 +49,7 @@ nothing, exposes nothing, and needs no teardown. Deployment adds value in only o
    (It writes test rows into the cases table; that table is not shown on the site.)
 5. **Warm-up:** on the Voice Engine page, score one of your clips once before recording. The first scoring call
    after a start took about 10 seconds on this machine; later ones about 2 seconds.
-6. Choose the theme you want to record in (the link in the top right). Set the browser zoom to 100%.
+6. Set the browser zoom to 100%. The site is dark only; there is no theme to choose.
 
 If something fails: `docker compose ps` (every service should be "Up", the loader "Exited (0)");
 `docker compose logs api --tail 50`. If Docker Desktop's engine has stopped by itself (it did twice during the
@@ -59,7 +59,7 @@ build): `docker desktop start`.
 
 Say only what is on the page; every sentence below is backed by the project log. The site has six pages, each with its
 own look and its own 3D scene (revision 2, 2026-10-17); the same yellow tags, solid / hatched / dashed marks and the
-plain-language-first layers run through all of them. Start on the Overview in the theme you want to record. Scroll
+plain-language-first layers run through all of them. Start on the Overview. Scroll
 slowly: the scene behind the text changes with each section, and a section is only on screen for about a screen's height.
 
 1. **Overview, "The Mesh" (30 s).** The hero names the two checks and shows the third as a dashed row: "Designed, not
@@ -84,7 +84,7 @@ slowly: the scene behind the text changes with each section, and a section is on
    drawers: "what we could not test." Break the seal on Phase 2D: "training on squeezed copies reduced the problem; it
    did not remove it, and the control was weaker than the served model."
 7. **About, "The Workbench" (10 s).** The drawing goes back together as you scroll; the steps to run it yourself.
-8. **Close.** Switch the theme once to show the same page in the other palette. For a technical audience, press "Show the
+8. **Close.** For a technical audience, press "Show the
    detail for engineers" on any page first.
 
 Recording mode (`TRUSTMESH_RECORDING_MODE=1` on the API) hides real transaction numbers, labels and scores in every

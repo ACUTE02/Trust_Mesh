@@ -5,13 +5,13 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import {
   AdditiveBlending, BufferAttribute, BufferGeometry, Color, IcosahedronGeometry, LineBasicMaterial, LineDashedMaterial,
-  LineSegments, Mesh, NormalBlending, Points, ShaderMaterial, Vector2, WireframeGeometry,
+  LineSegments, NormalBlending, Points, ShaderMaterial, Vector2, WireframeGeometry,
 } from "three";
 import { buildEdges, buildMeshLayout } from "../layouts";
 import { palette } from "../palettes";
 import { readPrefs } from "../prefs";
 import { TIERS } from "../quality";
-import { engineFragment, engineVertex } from "../shaders/engine";
+import { createEngine } from "../engine3d";
 import { lineFragment, lineVertex, meshFragment, meshVertex } from "../shaders/mesh";
 import { live, useUi } from "../store";
 import { useCompiled } from "../useCompiled";
@@ -53,28 +53,20 @@ export default function HomeScene() {
       vertexShader: lineVertex, fragmentShader: lineFragment, transparent: true, depthWrite: false,
       uniforms: { ...shared, uAlpha: { value: 0.28 } },
     });
-    const engineGeo = new IcosahedronGeometry(0.62, 2);
-    const makeEngineMat = () =>
-      new ShaderMaterial({
-        vertexShader: engineVertex, fragmentShader: engineFragment, transparent: true,
-        uniforms: { uBody: { value: new Color() }, uRim: { value: new Color() }, uAlpha: { value: 1 } },
-      });
-    const graphMat = makeEngineMat();
-    const voiceMat = makeEngineMat();
     const ghostSource = new IcosahedronGeometry(0.7, 1);
     const ghostGeo = new WireframeGeometry(ghostSource);
     ghostSource.dispose();
     const ghost = new LineSegments(ghostGeo, new LineDashedMaterial({ dashSize: 0.1, gapSize: 0.09, transparent: true }));
     ghost.computeLineDistances();
     ghost.position.set(3.4, -1.5, 1.2); // the Visual slot: hollow and dashed
-    const graphMesh = new Mesh(engineGeo, graphMat);
-    graphMesh.position.set(2.3, 1.7, 1.2);
-    const voiceMesh = new Mesh(engineGeo, voiceMat);
-    voiceMesh.position.set(4.9, 0.8, 1.2);
+    const graphEngine = createEngine();
+    graphEngine.root.position.set(2.3, 1.7, 1.2);
+    const voiceEngine = createEngine();
+    voiceEngine.root.position.set(4.9, 0.8, 1.2);
     const cutGeo = new BufferGeometry();
     cutGeo.setAttribute("position", new BufferAttribute(new Float32Array([-6.5, 0.8, 0, 6.5, 0.8, 0]), 3));
     const cut = new LineSegments(cutGeo, new LineBasicMaterial({ transparent: true }));
-    return { shared, pointMat, lineMat, engineGeo, graphMat, voiceMat, graphMesh, voiceMesh, ghost, cut, pointsObj: new Points(points, pointMat), linesObj: new LineSegments(lines, lineMat) };
+    return { shared, pointMat, lineMat, graphEngine, voiceEngine, ghost, cut, pointsObj: new Points(points, pointMat), linesObj: new LineSegments(lines, lineMat) };
     // The geometry objects are replaced when the tier changes the node count (see the effect below).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -92,17 +84,17 @@ export default function HomeScene() {
     live.continuous = !live.reduced;
     return () => {
       live.continuous = false;
-      rig.pointMat.dispose(); rig.lineMat.dispose(); rig.engineGeo.dispose(); rig.graphMat.dispose(); rig.voiceMat.dispose();
+      rig.pointMat.dispose(); rig.lineMat.dispose(); rig.graphEngine.dispose(); rig.voiceEngine.dispose();
       rig.ghost.geometry.dispose(); (rig.ghost.material as LineDashedMaterial).dispose();
       rig.cut.geometry.dispose(); (rig.cut.material as LineBasicMaterial).dispose();
     };
   }, [rig]);
 
-  const ready = useCompiled(() => [rig.linesObj, rig.pointsObj, rig.graphMesh, rig.voiceMesh, rig.ghost, rig.cut]);
+  const ready = useCompiled(() => [rig.linesObj, rig.pointsObj, rig.graphEngine.root, rig.voiceEngine.root, rig.ghost, rig.cut]);
 
   const stageRef = useRef(0);
   useFrame((state, dt) => {
-    const { shared, pointMat, lineMat, graphMat, voiceMat, ghost, cut, pointsObj, linesObj } = rig;
+    const { shared, pointMat, lineMat, graphEngine, voiceEngine, ghost, cut, pointsObj, linesObj } = rig;
     const target = (live.data.stage as number | undefined) ?? 0;
     const ease = live.reduced ? 1 : 1 - Math.exp(-dt * 2.4);
     stageRef.current += (target - stageRef.current) * ease;
@@ -121,9 +113,10 @@ export default function HomeScene() {
     lineMat.uniforms.uAlpha.value = dark ? 0.26 : 0.22;
     const pm = pointMat.uniforms;
     pm.uAccent.value.copy(palette.accent); pm.uFlag.value.copy(palette.flag); pm.uPixel.value = state.gl.getPixelRatio();
+    const vis = 1 - Math.min(1, stage * 1.4); // the engines belong to the opening chapter only
     // solid engines: teal for the Graph Engine, magenta for the Voice Engine (the same colours as their bars on the page)
-    graphMat.uniforms.uBody.value.copy(palette.bg).lerp(palette.ledger, 0.4); graphMat.uniforms.uRim.value.copy(palette.ledger);
-    voiceMat.uniforms.uBody.value.copy(palette.bg).lerp(palette.spectrum, 0.4); voiceMat.uniforms.uRim.value.copy(palette.spectrum);
+    graphEngine.update(live.time, state.camera, palette.ledger, palette.bg, vis, live.reduced);
+    voiceEngine.update(live.time + 2, state.camera, palette.spectrum, palette.bg, vis, live.reduced);
 
     // camera flight: closer as the page goes on, a little parallax from the pointer
     state.camera.position.z = 10.6 - Math.min(stage, 4) * 0.55;
@@ -132,10 +125,6 @@ export default function HomeScene() {
     state.camera.lookAt(0, 0, 0);
     pointsObj.rotation.y = linesObj.rotation.y = live.reduced ? 0 : Math.sin(live.time * 0.07) * 0.16;
 
-    // engine nodes belong to the opening chapter only
-    const vis = 1 - Math.min(1, stage * 1.4);
-    graphMat.uniforms.uAlpha.value = vis;
-    voiceMat.uniforms.uAlpha.value = vis;
     (ghost.material as LineDashedMaterial).opacity = vis;
     (ghost.material as LineDashedMaterial).color.copy(palette.ink);
     const cm = cut.material as LineBasicMaterial;
@@ -148,8 +137,8 @@ export default function HomeScene() {
     <group>
       <primitive object={rig.linesObj} frustumCulled={false} />
       <primitive object={rig.pointsObj} frustumCulled={false} />
-      <primitive object={rig.graphMesh} />
-      <primitive object={rig.voiceMesh} />
+      <primitive object={rig.graphEngine.root} />
+      <primitive object={rig.voiceEngine.root} />
       <primitive object={rig.ghost} />
       <primitive object={rig.cut} />
     </group>

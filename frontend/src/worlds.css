@@ -10,24 +10,14 @@ html[data-world="case"] { --font-display: "Sofia Sans Extra Condensed Variable",
 html[data-world="evidence"] { --font-display: "Fraunces Variable", "Fraunces Fallback", Georgia, serif; }
 html[data-world="about"] { --font-display: "Martian Mono Variable", "Martian Fallback", var(--font-mono); --display-track: -0.04em; }
 
-/* ---- Home: The Mesh. Night, amber thread. Bone paper with ink threads in light. ---- */
+/* ---- Home: The Mesh. Night, amber thread. ---- */
 html[data-world="home"][data-theme="dark"], html[data-world="lost"][data-theme="dark"], html:not([data-world])[data-theme="dark"] {
   --slab: #0b0f1a; --sheet: #151b2b; --ink: #ece9e1; --ink-soft: #b9bdc9; --rule: #2c3550; --track: #2a3350;
   --ledger: #3fb3a8; --spectrum: #d58bc6; --flag: #ef8a6f;
   --accent: #f2a93b; --accent-2: #7fb7ff; --thread: #f2b95a; --glow: #f2a93b;
 }
-html[data-world="home"][data-theme="light"], html[data-world="lost"][data-theme="light"], html:not([data-world])[data-theme="light"] {
-  --slab: #ece8dc; --sheet: #f6f3ea; --ink: #1a1d25; --ink-soft: #454a57; --rule: #c3bdac; --track: #d3cfc2;
-  --ledger: #0b6b63; --spectrum: #7b2f69; --flag: #a63d2b;
-  --accent: #9a5a00; --accent-2: #1f5fae; --thread: #7a5410; --glow: #d98f1b;
-}
 
 /* ---- Graph: The Ledger. Cream paper, copper, teal ink. Aged ledger in dark. ---- */
-html[data-world="graph"][data-theme="light"] {
-  --slab: #efe6d0; --sheet: #f8f1de; --ink: #2a2017; --ink-soft: #574736; --rule: #cdbe9e; --track: #dccfae;
-  --ledger: #0b5d58; --spectrum: #6e2a5e; --flag: #a63d2b;
-  --accent: #9c4d17; --accent-2: #0b5d58; --thread: #b4652c; --glow: #d98a4e;
-}
 html[data-world="graph"][data-theme="dark"] {
   --slab: #1b1511; --sheet: #261d17; --ink: #eadcc6; --ink-soft: #c0ae93; --rule: #4d3c2e; --track: #3a2d23;
   --ledger: #4fb5ab; --spectrum: #c77bb4; --flag: #e0745f;
@@ -40,18 +30,8 @@ html[data-world="voice"][data-theme="dark"] {
   --ledger: #3fb3a8; --spectrum: #ff8fb8; --flag: #ff8a6b;
   --accent: #ff9d3d; --accent-2: #6ea8ff; --thread: #ffb347; --glow: #ff7a59;
 }
-html[data-world="voice"][data-theme="light"] {
-  --slab: #e8e4d8; --sheet: #f4f1e7; --ink: #1c2330; --ink-soft: #46506a; --rule: #bdb8a6; --track: #d2cebf;
-  --ledger: #0b6b63; --spectrum: #8a2f5d; --flag: #a63d2b;
-  --accent: #a8430d; --accent-2: #1f4f8f; --thread: #1c2330; --glow: #c05a20;
-}
 
 /* ---- Case: The Balance. Brushed steel, signal red, brass. Gunmetal in dark. ---- */
-html[data-world="case"][data-theme="light"] {
-  --slab: #d9dcde; --sheet: #eceeef; --ink: #1e2328; --ink-soft: #444c54; --rule: #aeb4b8; --track: #c6cacd;
-  --ledger: #0b6b63; --spectrum: #6e2a5e; --flag: #b3281c;
-  --accent: #b3281c; --accent-2: #8a6416; --thread: #6f7881; --glow: #c9a24a;
-}
 html[data-world="case"][data-theme="dark"] {
   --slab: #14181c; --sheet: #1d2329; --ink: #e4e8ea; --ink-soft: #b0b8be; --rule: #3a434b; --track: #2b333a;
   --ledger: #3fb3a8; --spectrum: #c77bb4; --flag: #ff6f5e;
@@ -59,27 +39,17 @@ html[data-world="case"][data-theme="dark"] {
 }
 
 /* ---- Evidence: The Archive. Off-white and archival green, kraft. Deep museum green in dark. ---- */
-html[data-world="evidence"][data-theme="light"] {
-  --slab: #e8ebe1; --sheet: #f5f6ef; --ink: #1d2a21; --ink-soft: #435247; --rule: #bcc4b3; --track: #d3d8c9;
-  --ledger: #2f5d46; --spectrum: #6e2a5e; --flag: #a63d2b;
-  --accent: #2f5d46; --accent-2: #8a6a34; --thread: #7a6a4a; --glow: #c9a46a;
-}
 html[data-world="evidence"][data-theme="dark"] {
   --slab: #0e1a14; --sheet: #15261d; --ink: #e0eadd; --ink-soft: #aebfae; --rule: #2d4a3a; --track: #223a2d;
   --ledger: #5fbf8f; --spectrum: #c77bb4; --flag: #e0745f;
   --accent: #6fcf9f; --accent-2: #d3ad73; --thread: #b59a6a; --glow: #e0bf85;
 }
 
-/* ---- About: The Workbench. Blueprint: white lines on blue in dark, blue lines on white in light. ---- */
+/* ---- About: The Workbench. White drawing lines on the same dark graphite as the other pages. ---- */
 html[data-world="about"][data-theme="dark"] {
-  --slab: #0e3466; --sheet: #13427f; --ink: #eaf2ff; --ink-soft: #c3d6f2; --rule: #5a86c4; --track: #1d4f8f;
-  --ledger: #8fe0d5; --spectrum: #f0b4e0; --flag: #ffb4a2;
-  --accent: #ffffff; --accent-2: #ffd45a; --thread: #cfe3ff; --glow: #9cc4ff;
-}
-html[data-world="about"][data-theme="light"] {
-  --slab: #f3f6fb; --sheet: #ffffff; --ink: #0e3466; --ink-soft: #345b8e; --rule: #9fb7d6; --track: #d5e0ee;
-  --ledger: #0b6b63; --spectrum: #7b2f69; --flag: #a63d2b;
-  --accent: #0e3466; --accent-2: #a5600f; --thread: #1d5aa8; --glow: #4a88d8;
+  --slab: #0c1016; --sheet: #151b23; --ink: #e9eef5; --ink-soft: #b9c3d0; --rule: #34404f; --track: #232c38;
+  --ledger: #6fd3c4; --spectrum: #e3a3d6; --flag: #ff9d86;
+  --accent: #ffffff; --accent-2: #9fc0ee; --thread: #d7e6fb; --glow: #8fb4e8;
 }
 
 /* ---- Shared layout ---- */

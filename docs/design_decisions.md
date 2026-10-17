@@ -1351,6 +1351,8 @@ postprocessing and `zustand` were not needed; a small store with `useSyncExterna
 - Fallbacks, each tested in a browser: reduced motion draws one still frame per world and crossfades between pages; data
   saving, no WebGL and a lost context show a drawn poster with the same text.
 
+**Dark only (2026-10-17, owner decision after reviewing the build).** The light theme and its switch were removed: the site is dark in every world, and no light palette is defined (a test checks this). The Workbench changed from blue to the same dark graphite as the other pages, keeping its white drawing lines and monospaced headings. The two solid engine nodes on the Overview (Graph, Voice) were redrawn to match the hollow Visual node: a glowing core, a wireframe shell, two tilted rings and a halo, four draw calls each. Where this entry says "light and dark" above, only dark remains.
+
 **Where the spec and the repository disagreed, and what was done.**
 1. *The Overview keeps its case desk.* The spec moves the combined case desk to `/case` and keeps "a compact path to it" on
    the landing page. An existing test (one of the 37 that must keep passing) scores a case on `/`, so the Overview keeps a

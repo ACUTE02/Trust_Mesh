@@ -9,13 +9,8 @@
     <link rel="preload" as="font" type="font/woff2" crossorigin href="./node_modules/@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wght-normal.woff2" />
     <title>TrustMesh</title>
     <script>
-      // Theme before first paint: the saved choice, else the operating system setting.
-      (function () {
-        var saved = null;
-        try { saved = localStorage.getItem("tm-theme"); } catch (e) {}
-        var dark = saved ? saved === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
-        document.documentElement.dataset.theme = dark ? "dark" : "light";
-      })();
+      // The site is dark only: there is no light theme and no switch.
+      document.documentElement.dataset.theme = "dark";
     </script>
   </head>
   <body>

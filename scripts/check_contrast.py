@@ -57,8 +57,7 @@ def world_palettes(css):
 
 def main():
     index = (SRC / "index.css").read_text(encoding="utf-8")
-    base = {"light": tokens(index.split(":root {")[1].split("}")[0]),
-            "dark": tokens(index.split(':root[data-theme="dark"] {')[1].split("}")[0])}
+    base = {"dark": tokens(index.split(":root {")[1].split("}")[0])}  # the site is dark only
     palettes = {(f"base", theme): t for theme, t in base.items()}
     for key, t in world_palettes((SRC / "worlds.css").read_text(encoding="utf-8")).items():
         palettes[key] = {**base[key[1]], **t}  # a world overrides the base tokens it names

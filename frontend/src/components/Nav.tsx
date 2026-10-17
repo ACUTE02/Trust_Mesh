@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
-import { markDirty, setUi } from "../world/store";
 import { NAV_ORDER, WORLDS } from "../world/worlds";
 
 const LABEL: Record<string, string> = {
@@ -11,31 +10,6 @@ const LABEL: Record<string, string> = {
   evidence: "Evidence",
   about: "About",
 };
-
-function ThemeToggle() {
-  const [theme, setTheme] = useState(() => document.documentElement.dataset.theme ?? "light");
-  const next = theme === "dark" ? "light" : "dark";
-  return (
-    <button
-      type="button"
-      className="cursor-pointer border-0 bg-transparent p-0 text-sm underline"
-      onClick={() => {
-        document.documentElement.dataset.theme = next;
-        try {
-          localStorage.setItem("tm-theme", next);
-        } catch {
-          /* private mode: the choice just is not remembered */
-        }
-        setTheme(next);
-        setUi({ theme: next });
-        // The stage watches data-theme and re-reads the palette itself; here it only has to draw one more frame.
-        requestAnimationFrame(markDirty);
-      }}
-    >
-      Switch to {next} theme
-    </button>
-  );
-}
 
 /** The thread: one thin line under the header, in the thread colour of the world you are in. */
 function ThreadLine() {
@@ -92,9 +66,7 @@ export function Header() {
         <button ref={button} type="button" className="btn btn-quiet md:hidden" aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen((v) => !v)}>
           {open ? "Close menu" : "Menu"}
         </button>
-        <div className="ml-auto">
-          <ThemeToggle />
-        </div>
+        <div className="ml-auto" />
         {open && (
           <div id="mobile-menu" ref={panel} className="panel basis-full md:hidden">
             <nav aria-label="Pages, mobile" className="grid gap-3 text-base">

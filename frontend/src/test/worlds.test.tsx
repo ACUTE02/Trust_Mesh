@@ -193,16 +193,12 @@ describe("navigation and accessibility", () => {
     expect(document.activeElement).toBe(button);
   });
 
-  it("the theme toggle switches the theme, remembers the choice, and never rebuilds the page", async () => {
-    document.documentElement.dataset.theme = "light";
+  it("the site is dark only: there is no theme switch, and no light palette is defined", async () => {
     const { container } = await renderRoute("/graph");
-    const main = container.querySelector("main");
-    fireEvent.click(screen.getByText("Switch to dark theme"));
-    expect(document.documentElement.dataset.theme).toBe("dark");
-    expect(localStorage.getItem("tm-theme")).toBe("dark");
-    expect(container.querySelector("main")).toBe(main);
-    fireEvent.click(screen.getByText("Switch to light theme"));
-    expect(localStorage.getItem("tm-theme")).toBe("light");
+    expect(screen.queryByText(/Switch to (light|dark) theme/)).toBeNull();
+    expect(container.textContent).not.toMatch(/light theme/i);
+    const css = readFileSync(join(process.cwd(), "src", "worlds.css"), "utf-8");
+    expect(css).not.toContain('data-theme="light"');
   });
 
   it("the footer carries the thread to the next page", async () => {

@@ -2,23 +2,9 @@
 @import "./fonts.css";
 @import "./worlds.css";
 
-/* Tokens. Light is the base; dark is the same system re-toned, not a different look.
+/* Tokens. The site is dark only.
    Marker yellow is only ever a fill behind Graphite text (--marker-ink), in both themes. */
 :root {
-  --slab: #dce0db;
-  --sheet: #eef0ec;
-  --ink: #2a2f2d;
-  --ink-soft: #4a524e;
-  --rule: #b4bab4;
-  --marker: #f5c400;
-  --marker-ink: #2a2f2d;
-  --ledger: #0b6b63;
-  --spectrum: #6e2a5e;
-  --flag: #a63d2b;
-  --track: #c9cec8;
-  color-scheme: light;
-}
-:root[data-theme="dark"] {
   --slab: #1c2220;
   --sheet: #262e2b;
   --ink: #e3e6e1;
