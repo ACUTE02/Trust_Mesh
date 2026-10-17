@@ -148,10 +148,17 @@ describe("honesty rules", () => {
     for (const li of items) expect(li.className).toContain("planned");
   });
 
-  it("the owner's open items are marked in the source and shown as plain 'coming soon', never as invented content", async () => {
+  it("the resume is a real link that opens in a new tab; the paragraph TODO still shows plain text, never invented content", async () => {
     const { container } = await renderRoute("/about");
-    expect(container.querySelector("[data-todo]")).not.toBeNull();
-    expect(container.textContent).toMatch(/Resume: coming soon/);
+    const resume = [...container.querySelectorAll("a")].find((a) => a.textContent?.trim() === "Resume");
+    expect(resume).toBeDefined();
+    expect(resume!.getAttribute("href")).toBe("https://drive.google.com/file/d/1dxgV9srfLW7HasC4_ou7HTHU617CadIp/view?usp=sharing");
+    expect(resume!.getAttribute("target")).toBe("_blank");
+    expect(resume!.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(container.textContent).not.toMatch(/Resume: coming soon/);
+    expect(container.querySelector('[data-todo="owner: resume link"]')).toBeNull();
+    // the paragraph in the owner's own words is still open: marked in the source, plain text on the page
+    expect(container.querySelector('[data-todo="owner: short paragraph in your own words"]')).not.toBeNull();
     expect(container.textContent).not.toMatch(/\+?\d{10}|CGPA/i);
   });
 });

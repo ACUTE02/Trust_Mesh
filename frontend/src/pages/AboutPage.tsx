@@ -109,9 +109,10 @@ export default function AboutPage() {
                 LinkedIn
               </a>
             </li>
-            {/* TODO(owner): link the resume file here when it exists. */}
-            <li className="text-ink-soft" data-todo="owner: resume link">
-              Resume: coming soon.
+            <li>
+              <a href="https://drive.google.com/file/d/1dxgV9srfLW7HasC4_ou7HTHU617CadIp/view?usp=sharing" target="_blank" rel="noopener noreferrer">
+                Resume
+              </a>
             </li>
           </ul>
         </div>
