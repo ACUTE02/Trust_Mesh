@@ -689,3 +689,8 @@ audio; it does not catch AAC 32 kb/s or Opus 24 kb/s re-encodes of clean clips.
 given on the full test set); F2 sees four versions of each training clip, the control one; echo and noise are simple
 synthetic models; ten conditions are not a phone network. The decision uses seed-averaged scores, so the three seeds are
 not three independent tests.
+
+## Test counts, 2026-10-18
+
+- Python unit tests (`pytest tests`): 195 passed
+- Frontend tests (inside `npm run build`): 97 passed

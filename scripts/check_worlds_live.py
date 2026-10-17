@@ -18,7 +18,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-import numpy as np
 import soundfile as sf
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -75,7 +74,7 @@ async def recording(base):
         await asyncio.sleep(2)
         case = json.loads(await page.js("JSON.stringify(window.__tmLive.data.case || null)"))
         text = await page.js("document.body.innerText")
-        html = await page.js("document.documentElement.outerHTML")
+        await page.js("document.documentElement.outerHTML")
         out["case"] = {"scene_data": case, "banner": "Recording mode is on" in text, "register": [l for l in text.splitlines() if "Details hidden" in l][:3],
                        "example_ids_in_page_text": [i for i in EXAMPLE_IDS if i in text], "pass": bool(case and case["graph"] is None and case["masked"] and "Recording mode is on" in text and not any(i in text for i in EXAMPLE_IDS))}
         await page.goto(base + "/graph?perf=1", wait=0)
