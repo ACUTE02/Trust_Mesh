@@ -23,9 +23,17 @@
 
 /* Stand-ins used while a font loads. Each is Arial scaled to the width and line metrics of the real face (measured in
    the browser), so the page does not shift when the real font arrives. */
-@font-face { font-family: "Schibsted Fallback"; src: local("Arial"); size-adjust: 101.2%; ascent-override: 96.8%; descent-override: 25.7%; line-gap-override: 0%; }
-@font-face { font-family: "Martian Fallback"; src: local("Arial"); size-adjust: 127.6%; ascent-override: 78.4%; descent-override: 15.7%; line-gap-override: 0%; }
-@font-face { font-family: "Bricolage Fallback"; src: local("Arial"); size-adjust: 99.6%; ascent-override: 93.4%; descent-override: 27.1%; line-gap-override: 0%; }
-@font-face { font-family: "Fraunces Fallback"; src: local("Arial"); size-adjust: 104.6%; ascent-override: 93.7%; descent-override: 24.9%; line-gap-override: 0%; }
-@font-face { font-family: "Unbounded Fallback"; src: local("Arial"); size-adjust: 131.1%; ascent-override: 76.3%; descent-override: 19.1%; line-gap-override: 0%; }
-@font-face { font-family: "Sofia Fallback"; src: local("Arial"); size-adjust: 57.5%; ascent-override: 156.5%; descent-override: 52.2%; line-gap-override: 0%; }
+@font-face { font-family: "Schibsted Fallback"; font-weight: 100 499; src: local("Arial"); size-adjust: 101.2%; ascent-override: 96.8%; descent-override: 25.7%; line-gap-override: 0%; }
+@font-face { font-family: "Martian Fallback"; font-weight: 100 499; src: local("Arial"); size-adjust: 127.6%; ascent-override: 78.4%; descent-override: 15.7%; line-gap-override: 0%; }
+@font-face { font-family: "Bricolage Fallback"; font-weight: 100 499; src: local("Arial"); size-adjust: 99.6%; ascent-override: 93.4%; descent-override: 27.1%; line-gap-override: 0%; }
+@font-face { font-family: "Fraunces Fallback"; font-weight: 100 499; src: local("Arial"); size-adjust: 104.6%; ascent-override: 93.7%; descent-override: 24.9%; line-gap-override: 0%; }
+@font-face { font-family: "Unbounded Fallback"; font-weight: 100 499; src: local("Arial"); size-adjust: 131.1%; ascent-override: 76.3%; descent-override: 19.1%; line-gap-override: 0%; }
+@font-face { font-family: "Sofia Fallback"; font-weight: 100 499; src: local("Arial"); size-adjust: 57.5%; ascent-override: 156.5%; descent-override: 52.2%; line-gap-override: 0%; }
+
+/* The same stand-ins for bold headings (weights 500 and up), matched to the bold of Arial. */
+@font-face { font-family: "Schibsted Fallback"; font-weight: 500 900; src: local("Arial Bold"), local("Arial-BoldMT"); size-adjust: 100.8%; ascent-override: 97.3%; descent-override: 25.8%; line-gap-override: 0%; }
+@font-face { font-family: "Martian Fallback"; font-weight: 500 900; src: local("Arial Bold"), local("Arial-BoldMT"); size-adjust: 122.3%; ascent-override: 81.8%; descent-override: 16.4%; line-gap-override: 0%; }
+@font-face { font-family: "Bricolage Fallback"; font-weight: 500 900; src: local("Arial Bold"), local("Arial-BoldMT"); size-adjust: 98.5%; ascent-override: 94.4%; descent-override: 27.4%; line-gap-override: 0%; }
+@font-face { font-family: "Fraunces Fallback"; font-weight: 500 900; src: local("Arial Bold"), local("Arial-BoldMT"); size-adjust: 103.0%; ascent-override: 95.2%; descent-override: 25.3%; line-gap-override: 0%; }
+@font-face { font-family: "Unbounded Fallback"; font-weight: 500 900; src: local("Arial Bold"), local("Arial-BoldMT"); size-adjust: 130.5%; ascent-override: 76.6%; descent-override: 19.1%; line-gap-override: 0%; }
+@font-face { font-family: "Sofia Fallback"; font-weight: 500 900; src: local("Arial Bold"), local("Arial-BoldMT"); size-adjust: 60.2%; ascent-override: 149.6%; descent-override: 49.9%; line-gap-override: 0%; }

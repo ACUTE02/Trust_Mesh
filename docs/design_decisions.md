@@ -1298,6 +1298,172 @@ Plain reading: on the owner's three phone-recorded genuine memos F2 moves the me
 middle, but 2 of 3 memos are still in the high band; F2 still flags all three voice clones; and it does not flag the 9 genuine
 clean clips. Three memos cannot support any rate.
 
+## Frontend Revision 2: six worlds (2026-10-17)
+
+Spec: `PHASE_2_FRONTEND_REVISION_2_IMMERSIVE.md` with its performance addendum (the addendum wins where they differ). This
+revision changes how the site looks and moves. It does not change what the site claims: the honesty rules of the spec's
+section 1 are enforced by tests (`frontend/src/test/worlds.test.tsx`) on every route.
+
+**The six worlds and the 404.** Each page has one idea, one palette per theme, one display typeface, one 3D scene and one
+motion character.
+
+| Route | World | Idea | Concept chosen (the other considered) and why |
+|---|---|---|---|
+| `/` | The Mesh | trust is a thread between things | A thread mesh whose nodes re-arrange for each chapter (a particle galaxy with orbiting engines was the other). The re-arrangement doubles as the three findings. |
+| `/graph` | The Ledger | a transaction is a bead on a copper thread | A loom with beads (a city of towers per time step). The time axis is the point of the page, and a ledger reads as accounting. |
+| `/voice` | The Terrain | a voice, as a landscape | A spectrogram terrain drawn from the user's own clip (a rotating waveform ring). Frequency, time and loudness are the real structure, and the band-limit cliff becomes visible. |
+| `/case` | The Balance | two scores, honestly weighed | A beam balance with three pans (a radar with two needles). The weights are the honest subject, and the empty third pan is the Visual slot. |
+| `/evidence` | The Archive | what we checked, what we could not | A wall of drawers (a timeline tunnel). "Sealed" and "empty" become physical states. |
+| `/about` | The Workbench | how to rebuild it yourself | An exploded blueprint that draws itself on (a floating card stack). |
+| `*` | an unlinked node | | One node adrift, its thread snapped; the link back ties it. |
+
+**Research, stated honestly.** The reference site (scrolltide.co) was opened and studied in a browser; four more sources
+were read at summary level (two Codrops articles, an Awwwards listing, a WebGL roundup). That is five, not the eight the
+spec asks for. One article could not be fetched (HTTP 403). Notes are kept outside the repository.
+
+**Typefaces.** Four display families (Bricolage Grotesque for Home, Fraunces for Graph and Evidence, Unbounded for Voice,
+Sofia Sans Extra Condensed for Case), plus Martian Mono, already used for code, which the Workbench also uses for its
+headings. All are SIL OFL 1.1, variable, self-served, latin subset only (declared in `src/fonts.css`, which is why the
+build emits one file per family). All six latin faces together weigh 234.1 KB; a page loads the body face and its own
+display face (Home: 86.1 KB). Each face has a stand-in (Arial scaled to its measured width and line metrics) so the page
+does not move when the real face arrives. Graph and Evidence share Fraunces; the Archive is told apart by its green,
+kraft and drawers, not by a fifth family (the spec allows at most four).
+
+**Dependencies (all permissive; `npm audit --omit=dev` reports 0 vulnerabilities).** `three` 0.186.1 (MIT), `@react-three/fiber`
+9.8.2 (MIT; its peer range is React 19 below 19.4, the installed React is 19.3.0), `lenis` 1.3.27 (MIT), and the four
+`@fontsource-variable` packages (OFL-1.1). **GSAP was rejected**: its licence ("Standard no charge") is not MIT, ISC,
+BSD or Apache, which the spec requires. A 60-line ticker and easing module replaces it (`src/world/ticker.ts`). `drei`,
+postprocessing and `zustand` were not needed; a small store with `useSyncExternalStore` does the job.
+
+**Architecture.**
+- One persistent WebGL canvas for the whole site, loaded after first paint. One animation loop (the ticker) drives smooth
+  scroll and the canvas; nothing else owns a `requestAnimationFrame`. The canvas draws on demand (scroll, pointer, a
+  theme change, an animating scene) and not at all while the tab is hidden.
+- A page is cut into chapters; when a chapter crosses the middle of the screen the scene eases to it. A page hands its scene
+  a small data object; the scene never reads the page. Scene code is loaded per world; no world loads another's.
+- Everything is instanced or shader-driven: Home 1,200 / 3,000 / 6,000 nodes (low / medium / high) in one points draw and
+  one lines draw; Graph beads as lit-sphere point sprites; the Voice terrain is one grid whose heights are one vertex
+  attribute written per clip; the Archive is two instanced meshes and one dashed line list. No textures at all (texture
+  memory is 0 in every world), no shadows, no reflections, no post-processing.
+- A quality governor starts on the low tier and promotes only after three good windows in a row, against 60 fps (or 30 for
+  scenes that ask for 30), demotes quickly on a dip, and never flip-flops. Weak devices and touch screens are capped at
+  medium. Shaders are compiled with `compileAsync` before a scene shows, so a route change does not block on a compile.
+- Fallbacks, each tested in a browser: reduced motion draws one still frame per world and crossfades between pages; data
+  saving, no WebGL and a lost context show a drawn poster with the same text.
+
+**Where the spec and the repository disagreed, and what was done.**
+1. *The Overview keeps its case desk.* The spec moves the combined case desk to `/case` and keeps "a compact path to it" on
+   the landing page. An existing test (one of the 37 that must keep passing) scores a case on `/`, so the Overview keeps a
+   compact copy of the desk, and `/case` holds the full one with the placeholder-weights explanation and a register.
+2. *The cases register is local to the visit.* The service's own `/cases` listing is blocked by the nginx proxy on purpose
+   (it would list real transaction scores) and would break recording mode, so the register shows the cases scored in this
+   visit, highest risk first, and says so.
+3. *No real transaction scores in the worked example.* The spec's example (a graph score of 0.993 and a clean voice score
+   giving 0.497, "medium") uses per-transaction scores that are not in the data module. The page gives the arithmetic with
+   the extremes instead (highest and lowest possible scores average to the middle, which falls in the medium band), and
+   says the band edges are placeholders too. `scripts/verify_serving.py` still prints the real example locally.
+4. *Phase 2D.* The spec says the element about it must read "pre-registered, run pending" until the owner updates the data
+   module. This task's brief fixed the wording as "reduced, not removed", so the Archive's envelope is sealed until you press
+   it and then states the result with its caveats. The 14 figures it shows are new data-module entries (phase code P2D),
+   each sourced to the table in "Phase 2D FULL results" above and checked by `scripts/check_frontend_numbers.py`.
+5. *New data-module entries.* 28 entries were added, none changed: 14 for the audio-quality warning, the two compression
+   tests, the live-versus-offline check and the audit; 14 for Phase 2D. All 110 entries match their sources.
+6. *Stale entries, not touched.* `infra.pythonTests` (116) and `infra.frontendTests` (28) are older than the code (185 Python
+   tests; 87 frontend tests after this revision). They are shown in the Overview's "For engineers" layer. They need the
+   owner's instruction to change.
+7. *The owner's open items.* The resume link and a paragraph in the owner's own words are marked `TODO(owner)` in
+   `AboutPage.tsx` and shown to visitors as "Resume: coming soon". The GitHub and LinkedIn links already in the footer are
+   used as they were.
+8. *A bug found by measuring.* The first build put React into the 3D chunk (the bundler files shared code under whichever
+   chunk asks first), so the first page downloaded 353 KB of JavaScript instead of 110 KB. React is now pinned to its own
+   chunk and the 3D chunk is loaded only after first paint.
+
+**What was measured, and what could not be.** Everything below was measured on the production build served by the Docker
+nginx container (gzip on), in headless Edge with WebGL drawn in software (SwiftShader). Counts (draw calls, triangles,
+geometries, textures, bytes) are exact. **Frame rates and frame times from a software renderer are not real GPU speed**:
+they are used only to compare one world or one build with another. Real-GPU smoothness is unverified until the owner opens
+the site on a laptop and a phone (the checklist is in the final report). Lighthouse on real hardware, screen readers,
+Firefox, Safari and a real touch device were not run. Scripts: `scripts/check_worlds_browser.py` (browser checks),
+`scripts/check_worlds_live.py` (live checks against the running stack), `scripts/bundle_sizes.mjs`,
+`scripts/check_contrast.py`, `frontend/src/test/worlds.test.tsx` (route tests). Add `?perf=1` to any page for a readout
+(and `&tier=low|medium|high` to pin the tier); nothing is sent anywhere.
+
+**Sizes (gzip).** First load of any page, JavaScript: 109.9 KB (React 67.4 KB, the page shell 42.5 KB; budget 180 KB);
+CSS 8.2 KB; fonts for the Overview 86.1 KB (body face 45.7 KB, Bricolage Grotesque 40.4 KB). Loaded after first paint and
+shared by every world: the 3D chunk, 242.7 KB (budget 450 KB). One chunk per world scene: Home 3.6, Graph 3.6, Voice 3.2,
+Case 2.0, Evidence 1.8, About 1.7, 404 0.9 KB (budget 60 KB); one chunk per page: Graph 7.3, Voice 7.4, Case 2.0, Evidence
+4.1, About 2.0 KB. Smooth scroll (Lenis), 5.3 KB, is fetched after the page is up. Fonts, all six latin faces: 234.1 KB
+(budget about 450 KB). No world loads another world's scene.
+
+**Per tier (exact, from the renderer's own counters; texture memory is 0 bytes everywhere).**
+
+| World | Low: draw calls / triangles | Medium | High | Budget (high / low) |
+|---|---|---|---|---|
+| Home | 6 / 360 (1,200 nodes) | 6 / 360 (3,000) | 6 / 360 (6,000) | 60 calls, 300,000 triangles / 30, 100,000 |
+| Graph | 2 / 0 (600 beads) | 2 / 0 (1,500) | 2 / 0 (3,000) | met |
+| Voice | 1 / 3,906 (64 x 32 grid) | 1 / 16,002 (128 x 64) | 1 / 64,770 (256 x 128) | met |
+| Case | 11 / 2,232 | 11 / 2,232 | 11 / 2,232 | met |
+| Evidence | 4 / 792 | 4 / 792 | 4 / 792 | met |
+| About | 6 / 0 | 6 / 0 | 6 / 0 | met |
+| 404 | 2 / 180 | 2 / 180 | 2 / 180 | met |
+
+Points and lines are drawn without triangles, so Home, Graph and About show 0 or few triangles; the node counts are the
+per-tier instance caps. Rendering stops when nothing changes: the Archive, About and the 404 draw only on scroll, pointer
+or a click, and the others cap themselves at 30 frames a second where their motion is slow.
+
+**Cold first visit, phone-sized (390 x 800), 4x CPU slowdown, 1.6 Mbit/s with 150 ms round trip, cache off.**
+
+| Page | Largest contentful paint | Layout shift | Long tasks (ms) |
+|---|---|---|---|
+| Overview | 2.32 s (met, under 2.5) | 0 | 143, 369, 196, 145, 61, 142, 69 |
+| Graph | 2.16 s | 0.034 | 145, 101, 70 |
+| Voice | 2.09 s | 0.002 | 96, 96, 186 |
+| Case | 3.18 s in this run, **2.41 s when run alone: borderline** | 0.001 | 50, 75, 50, 165 |
+| Evidence | 1.66 s (the largest paint is the theme switch; the heading is revealed later) | 0 | 50, 84, 81, 52, 158 |
+| About | 1.64 s (same) | 0 | 216, 83, 51, 71 |
+
+Runs vary: the Overview measured 1.98 s to 2.32 s over three runs on the nginx container, and the Case page 3.18 s in the
+full run above but 2.41 s when loaded on its own (target 2.5 s), so the Case page is borderline and the difference between
+runs is larger than the difference between pages. In the isolated run the order was: page shell and React at about 1.4 s,
+the page chunk at 1.8 s, first content at 1.84 s, the 3D chunk (242.7 KB) arriving at 3.7 s and the scene appearing at
+about 4.1 s, so the scene never delays the text. **Long tasks.** On route changes under the same slowdown, tasks
+over 50 ms still occur in every world (Graph 65 to 107 ms, Voice 68 to 234, Case 81 to 141, Evidence 64, About 68 to 73,
+Overview 87 to 258): the budget of none over 50 ms is **missed**. They are page rendering and scene set-up, and software
+shader compilation is part of it; none exceeds 260 ms. **Input response** (real clicks, 4x slowdown, the browser's own
+event timing): 72 ms for the theme switch and 48 ms for the menu button, under the 100 ms target.
+
+**Memory.** After visiting all six worlds twice and returning to the Overview, the renderer holds 5 geometries and 0
+textures, the same as before (pass); the JavaScript heap was 10 MB.
+
+**Quality governor** (software rendering, so only a comparison): left alone for 14 s the Overview settled on the high tier,
+Graph on medium, Voice on low (the Voice grid is the heaviest scene).
+
+**Fallbacks, all tested in a browser.** Reduced motion: one still frame per world, no curtain between pages, nothing
+drawn while idle. Data saving: a poster and no canvas. No WebGL: a poster and the full text on all seven routes. A lost
+WebGL context: the poster appears and the text stays.
+
+**Checks that passed.** `npm run build` (type check, 87 frontend tests of which 37 are the earlier ones, production build),
+the same inside the Docker build; axe-core 0 violations in 28 runs (7 routes, light and dark, plain and engineer layer);
+every interactive element of every route reachable by the Tab key (7 routes, 2 layers); no horizontal overflow in 84
+combinations of width, theme and layer; no console errors on any route; contrast: 16 palettes, 0 failures, including the
+worst case behind a scrim or panel over a 3D scene (arithmetic on the palette, not measured pixels);
+`scripts/check_frontend_numbers.py` 110 of 110; `scripts/verify_serving.py` all ok. nginx serves the hashed assets with
+gzip and a one-year immutable cache, and the page itself with no-cache. Live checks against the running stack: a tone is
+refused and the terrain collapses; band-limited speech is scored with the warning and the fog bank sits at the reported
+cut-off; and in recording mode no transaction score, label or number reaches the balance, the neighbourhood beads or the
+register.
+
+**Distinctness test.** Each world's opening view and one mid-page view were rendered at 1440 x 900, in light and dark, and shrunk to one contact sheet at 25 percent (kept outside the repository). Judged honestly: every world can be told apart by shape, colour and composition alone, with the text unreadable. Home is a fine web of threads with two solid spheres and one hollow one; Graph is ruled rows of beads; Voice is a thermal landscape (contour lines on paper in light); Case is a beam balance in steel; Evidence is a wall of drawers in green and kraft; About is white lines on blue; the 404 is one node on an empty ground. The closest pair is Home and Graph in dark mode (warm points on a dark ground); they differ in structure (a web against rows) and in ground colour (navy against brown). No world was redesigned. Two weaknesses seen: in light mode the Graph beads read almost black rather than teal, and the Workbench drawing is sparse until it has drawn itself on.
+
+**The three optimisations that mattered most.**
+1. Keeping React out of the 3D chunk (found by reading the build, not by guessing): the first page went from 353 KB to
+   110 KB of JavaScript, and the largest paint of the Overview from 3.7 s to about 2.1 to 2.3 s in the same slow conditions.
+2. Metric-matched stand-ins for every font and a full-screen placeholder while a page loads: layout shift on a first
+   visit fell from as much as 0.63 (the footer jumped when a lazy page arrived) to 0.034 or less.
+3. Non-blocking work when a world opens (shaders compiled before the scene shows, the idle terrain's sound made in
+   6 ms slices, grid keys as numbers): the Voice route's longest task fell from 603 ms to 234 ms.
+
+
 ## Open items (not yet built)
 
 - `engines/graph/`: built for everything Phase 1D uses. The Phase 1–1C-only pieces (GAT, GIN,

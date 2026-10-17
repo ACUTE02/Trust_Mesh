@@ -160,3 +160,7 @@ main[data-fade="1"] { animation: page-fade 280ms both; }
 .flip-in { animation: flip-in 420ms cubic-bezier(.4,0,.2,1) both; transform-origin: 50% 50%; }
 @keyframes flip-in { from { transform: perspective(600px) rotateX(-70deg); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .flip-in { animation: none; } }
+
+/* The name in the header: the condensed Case face is narrow, so it is set larger there. */
+.site-brand { font-size: var(--text-lg); }
+html[data-world="case"] .site-brand { font-size: 1.6rem; letter-spacing: 0.02em; }

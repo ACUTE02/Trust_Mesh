@@ -56,8 +56,8 @@ number comes from, solid means measured, hatched means a shortcut, dashed means 
 system detail. Light and dark themes in every world (the first visit follows the operating system). The 3D is an
 extra: all text is real page text, and without WebGL, with data saving on, or with reduced motion the pages show a
 still poster or a calm still scene instead. To try everything yourself,
-step by step: `docs/HOW_TO_TEST_MYSELF.md`. On Windows, `start.bat` starts the whole stack and `stop.bat` stops it. Screenshots of the pages' empty states:
-`docs/frontend_screenshots/` (three widths, both themes). They contain aggregate results only.
+step by step: `docs/HOW_TO_TEST_MYSELF.md`. On Windows, `start.bat` starts the whole stack and `stop.bat` stops it. Screenshots of the opening view of every page:
+`docs/frontend_screenshots/` (1440 px wide, both themes, drawn with software WebGL). They contain aggregate results only.
 
 ![Overview page, light theme](docs/frontend_screenshots/landing_1440_light.png)
 

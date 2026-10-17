@@ -21,7 +21,10 @@ import self_test_browser as stb  # noqa: E402
 
 ROUTES = {"home": "/", "graph": "/graph", "voice": "/voice", "case": "/case", "evidence": "/evidence", "about": "/about", "lost": "/not-a-page"}
 NAV_LABEL = {"home": "Overview", "graph": "Graph Engine", "voice": "Voice Engine", "case": "Case desk", "evidence": "Evidence", "about": "About"}
-GL_FLAGS = ["--enable-unsafe-swiftshader", "--use-angle=swiftshader", "--ignore-gpu-blocklist"]
+# SwiftShader draws WebGL in software. The last three keep a headless window from being treated as hidden (a hidden page
+# gets no animation frames, so nothing would draw and the checks would read stale numbers).
+GL_FLAGS = ["--enable-unsafe-swiftshader", "--use-angle=swiftshader", "--ignore-gpu-blocklist",
+            "--disable-renderer-backgrounding", "--disable-background-timer-throttling", "--disable-backgrounding-occluded-windows"]
 OUT = stb.OUT
 
 
@@ -41,6 +44,13 @@ class Rec(stb.Page):
                 return message.get("result", {})
             self.events.append(message)
 
+    async def js(self, expression, await_promise=False):
+        """Evaluate in the page; gives up (returns None) after 30 s so a page that stops drawing cannot hang a whole run."""
+        try:
+            return await asyncio.wait_for(super().js(expression, await_promise), timeout=30)
+        except asyncio.TimeoutError:
+            return None
+
     async def drain(self, seconds=0.2):
         """Give the browser a moment, collecting events."""
         try:
@@ -54,6 +64,8 @@ async def new_page(ws, width=1440, height=900, mobile=False, scheme=None):
     page = Rec(ws)
     for domain in ("Page", "Runtime", "Log", "Network"):
         await page.send(f"{domain}.enable")
+    await page.send("Emulation.setFocusEmulationEnabled", enabled=True)
+    await page.send("Page.bringToFront")
     await page.send("Emulation.setDeviceMetricsOverride", width=width, height=height, deviceScaleFactor=1, mobile=mobile)
     if scheme:
         await page.send("Emulation.setEmulatedMedia", features=[{"name": "prefers-color-scheme", "value": scheme}])
@@ -66,7 +78,9 @@ async def with_browser(fn, port=9360, flags=None):
         async with websockets.connect(ws_url, max_size=None) as ws:
             return await fn(ws)
     finally:
-        process.kill()
+        # headless Edge starts a tree of processes; kill the whole tree so runs do not pile up
+        import subprocess
+        subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"], capture_output=True)
 
 
 # --- console errors --------------------------------------------------------------------------------------------
@@ -204,11 +218,16 @@ async def tiers(base):
         for tier in ("low", "medium", "high"):
             for name, path in ROUTES.items():
                 await page.goto(f"{base}{path}?perf=1&tier={tier}", wait=0)
-                await asyncio.sleep(4.5)
-                # a scene that draws only on demand may have drawn once before it finished loading: nudge it, then read
-                await page.js("window.dispatchEvent(new PointerEvent('pointermove', {clientX: 500, clientY: 300})); 1")
-                await asyncio.sleep(1.5)
-                info = json.loads(await page.js("JSON.stringify(window.__tmInfo ? window.__tmInfo() : null)") or "null")
+                # wait until the scene has drawn at least once (software rendering of the larger tiers is slow), nudging
+                # it each time: a scene that draws only on demand may have drawn before it finished loading
+                info = None
+                for _ in range(24):
+                    await asyncio.sleep(1.5)
+                    await page.js("window.dispatchEvent(new PointerEvent('pointermove', {clientX: 500, clientY: 300})); 1")
+                    await asyncio.sleep(0.6)
+                    info = json.loads(await page.js("JSON.stringify(window.__tmInfo ? window.__tmInfo() : null)") or "null")
+                    if info and info["calls"] > 0:
+                        break
                 perf = json.loads(await page.js("JSON.stringify(window.__tmPerf || null)") or "null")
                 table.setdefault(name, {})[tier] = info and {**info, "frameMs": perf and perf["frameMs"], "tier_reported": perf and perf["tier"]}
         return table
@@ -278,6 +297,29 @@ async def throttled(base):
         report["theme_toggle_response_ms"] = await page.js("(async()=>{const b=[...document.querySelectorAll('button')].find(b=>/Switch to/.test(b.textContent));const t=performance.now();b.click();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));return Math.round(performance.now()-t)})()", await_promise=True)
         return report
     return await with_browser(run, 9367)
+
+
+# --- input latency: real clicks (dispatched as input events), 4x CPU; the browser's own event timing for each ---------
+EVENTS = "window.__ev = []; try { new PerformanceObserver(l => l.getEntries().forEach(e => window.__ev.push({type: e.name, duration: Math.round(e.duration), delay: Math.round(e.processingStart - e.startTime), processing: Math.round(e.processingEnd - e.processingStart)}))).observe({type: 'event', durationThreshold: 16, buffered: true}); } catch (e) {}"
+
+
+async def input_latency(base):
+    async def run(ws):
+        page = await new_page(ws, 390, 800, mobile=True)
+        await page.send("Emulation.setCPUThrottlingRate", rate=4)
+        await page.send("Page.addScriptToEvaluateOnNewDocument", source=EVENTS)
+        await page.goto(base + "/?perf=1", wait=0)
+        await asyncio.sleep(9)
+        out = {}
+        for label, find in (("theme switch", "b => /Switch to/.test(b.textContent)"), ("menu button", "b => b.textContent.trim() === 'Menu'")):
+            box = json.loads(await page.js("(() => { const b = [...document.querySelectorAll('button')].find(%s); const r = b.getBoundingClientRect(); return JSON.stringify({x: r.x + r.width / 2, y: r.y + r.height / 2}) })()" % find))
+            await page.js("window.__ev.length = 0; 1")
+            for kind in ("mousePressed", "mouseReleased"):
+                await page.send("Input.dispatchMouseEvent", type=kind, x=box["x"], y=box["y"], button="left", clickCount=1)
+            await asyncio.sleep(2.5)
+            out[label] = await page.js("window.__ev")
+        return out
+    return await with_browser(run, 9372)
 
 
 # --- memory: all six worlds twice, then home again; geometry and texture counts return to the baseline -----------------
