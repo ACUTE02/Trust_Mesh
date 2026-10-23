@@ -51,3 +51,6 @@ artifacts/graph/results_sanitised.json
 
 # Phase 2D outputs stay local until the owner has reviewed them and the dataset terms
 artifacts/voice/*phase2d*
+
+# Docs are kept locally, not published (2026-10-23)
+/docs/
